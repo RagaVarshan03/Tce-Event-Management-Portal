@@ -1,0 +1,24 @@
+.evo-dashboard {
+    min-height: 100vh;
+    background: #f5f7fa;
+}
+
+.dashboard-main-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 30px 40px;
+}
+
+.events-section {
+    margin-bottom: 40px;
+}
+
+@media (max-width: 768px) {
+    .dashboard-main-content {
+        padding: 20px 15px;
+    }
+
+    .events-section {
+        margin-bottom: 30px;
+    }
+}

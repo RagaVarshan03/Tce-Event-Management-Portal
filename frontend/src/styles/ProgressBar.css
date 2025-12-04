@@ -1,0 +1,69 @@
+.progress-bar-container {
+    margin: 20px 0;
+}
+
+.progress-bar-track {
+    width: 100%;
+    height: 8px;
+    background: #e0e0e0;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 15px;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    border-radius: 10px;
+    transition: width 0.5s ease;
+}
+
+.progress-stages {
+    display: flex;
+    justify-content: space-between;
+    position: relative;
+}
+
+.progress-stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+}
+
+.stage-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #e0e0e0;
+    transition: all 0.3s;
+}
+
+.progress-stage.active .stage-dot {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2);
+}
+
+.stage-label {
+    font-size: 0.75rem;
+    color: #999;
+    text-align: center;
+    font-weight: 500;
+}
+
+.progress-stage.active .stage-label {
+    color: #667eea;
+    font-weight: 600;
+}
+
+@media (max-width: 768px) {
+    .stage-label {
+        font-size: 0.65rem;
+    }
+
+    .stage-dot {
+        width: 10px;
+        height: 10px;
+    }
+}

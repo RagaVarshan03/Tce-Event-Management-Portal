@@ -1,0 +1,279 @@
+/* TCE Header Styles */
+.tce-header {
+    width: 100%;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: white;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Top Header - White Background */
+.top-header {
+    background: white;
+    border-bottom: 1px solid #e0e0e0;
+    padding: 10px 0;
+}
+
+.header-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.navbar-logo {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+}
+
+.logo-banner {
+    height: 70px;
+    object-fit: contain;
+}
+
+.top-nav {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+.top-nav-link {
+    color: #333;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: color 0.3s;
+    padding: 8px 16px;
+}
+
+.top-nav-link:hover {
+    color: #8B0000;
+}
+
+.user-greeting {
+    color: #8B0000;
+    font-weight: 600;
+    font-size: 0.95rem;
+    padding: 8px 12px;
+}
+
+.logout-btn-top {
+    background-color: #8B0000;
+    color: white;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: background 0.3s ease;
+}
+
+.logout-btn-top:hover {
+    background-color: #6d0000;
+}
+
+/* Main Navigation - Maroon Background */
+.main-nav {
+    background: linear-gradient(135deg, #8B0000 0%, #A00000 100%);
+    padding: 0;
+}
+
+.nav-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    gap: 25px;
+    align-items: center;
+    position: relative;
+}
+
+.nav-menu {
+    display: flex;
+    gap: 25px;
+    align-items: center;
+}
+
+.nav-link {
+    color: white;
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 500;
+    padding: 15px 0;
+    transition: all 0.3s;
+    border-bottom: 3px solid transparent;
+    white-space: nowrap;
+}
+
+.nav-link:hover {
+    border-bottom-color: white;
+}
+
+/* Hamburger Menu */
+.hamburger {
+    display: none;
+    flex-direction: column;
+    justify-content: space-around;
+    width: 30px;
+    height: 25px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    z-index: 1000;
+}
+
+.hamburger span {
+    width: 30px;
+    height: 3px;
+    background-color: white;
+    border-radius: 2px;
+    transition: all 0.3s ease;
+    transform-origin: center;
+}
+
+.hamburger span.active:nth-child(1) {
+    transform: rotate(45deg) translateY(8px);
+}
+
+.hamburger span.active:nth-child(2) {
+    opacity: 0;
+}
+
+.hamburger span.active:nth-child(3) {
+    transform: rotate(-45deg) translateY(-8px);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .nav-container {
+        gap: 15px;
+    }
+
+    .nav-menu {
+        gap: 15px;
+    }
+
+    .nav-link {
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .top-header {
+        padding: 8px 0;
+    }
+
+    .header-container {
+        padding: 0 15px;
+    }
+
+    .logo-banner {
+        height: 50px;
+    }
+
+    .top-nav {
+        gap: 10px;
+    }
+
+    .top-nav-link {
+        font-size: 0.8rem;
+        padding: 6px 12px;
+    }
+
+    .user-greeting {
+        font-size: 0.85rem;
+        padding: 6px 10px;
+    }
+
+    .logout-btn-top {
+        padding: 6px 16px;
+        font-size: 0.85rem;
+    }
+
+    .hamburger {
+        display: flex;
+    }
+
+    .nav-container {
+        padding: 0 15px;
+    }
+
+    .nav-menu {
+        position: fixed;
+        top: 0;
+        left: -100%;
+        width: 280px;
+        height: 100vh;
+        background-color: #8B0000;
+        flex-direction: column;
+        justify-content: flex-start;
+        padding: 80px 20px 30px;
+        gap: 0;
+        transition: left 0.3s ease;
+        box-shadow: 4px 0 10px rgba(0, 0, 0, 0.3);
+        overflow-y: auto;
+    }
+
+    .nav-menu.active {
+        left: 0;
+    }
+
+    .nav-link {
+        font-size: 1.1rem;
+        padding: 15px 10px;
+        width: 100%;
+        text-align: left;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        border-left: 3px solid transparent;
+    }
+
+    .nav-link:hover {
+        border-bottom-color: rgba(255, 255, 255, 0.2);
+        border-left-color: white;
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+}
+
+@media (max-width: 480px) {
+    .logo-banner {
+        height: 40px;
+    }
+
+    .header-container {
+        padding: 0 10px;
+    }
+
+    .top-nav {
+        gap: 8px;
+    }
+
+    .top-nav-link {
+        font-size: 0.75rem;
+        padding: 5px 10px;
+    }
+
+    .user-greeting {
+        font-size: 0.75rem;
+        padding: 5px 8px;
+    }
+
+    .logout-btn-top {
+        padding: 5px 12px;
+        font-size: 0.75rem;
+    }
+
+    .nav-menu {
+        width: 250px;
+    }
+
+    .nav-link {
+        font-size: 1rem;
+        padding: 12px 10px;
+    }
+}

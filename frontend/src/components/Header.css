@@ -1,0 +1,207 @@
+.tce-header {
+    width: 100%;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: white;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Top Header - White Background */
+.top-header {
+    background: white;
+    border-bottom: 1px solid #e0e0e0;
+    padding: 10px 0;
+}
+
+.header-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logos-section {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+}
+
+.tce-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.tce-logo img {
+    height: 60px;
+    width: auto;
+}
+
+.tce-text h1 {
+    font-size: 1.2rem;
+    color: #8B0000;
+    margin: 0;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.tce-text p {
+    font-size: 0.9rem;
+    color: #333;
+    margin: 0;
+    font-weight: 600;
+}
+
+.tce-text span {
+    font-size: 0.7rem;
+    color: #666;
+    font-weight: 500;
+}
+
+.accreditation-logos {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.cert-logo {
+    height: 50px;
+    width: auto;
+}
+
+.top-nav {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+.top-nav a {
+    color: #333;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: color 0.3s;
+}
+
+.top-nav a:hover {
+    color: #8B0000;
+}
+
+/* Main Navigation - Maroon Background */
+.main-nav {
+    background: linear-gradient(135deg, #8B0000 0%, #A00000 100%);
+    padding: 0;
+}
+
+.nav-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    gap: 30px;
+    align-items: center;
+}
+
+.nav-container a {
+    color: white;
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 500;
+    padding: 15px 0;
+    transition: all 0.3s;
+    border-bottom: 3px solid transparent;
+}
+
+.nav-container a:hover {
+    border-bottom-color: white;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .header-container {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .logos-section {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .top-nav {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .nav-container {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 15px;
+    }
+
+    .nav-container a {
+        padding: 10px 0;
+    }
+}
+
+@media (max-width: 768px) {
+    .tce-logo img {
+        height: 45px;
+    }
+
+    .cert-logo {
+        height: 35px;
+    }
+
+    .tce-text h1 {
+        font-size: 1rem;
+    }
+
+    .tce-text p {
+        font-size: 0.8rem;
+    }
+
+    .top-nav a {
+        font-size: 0.8rem;
+    }
+
+    .nav-container a {
+        font-size: 0.85rem;
+    }
+
+    .accreditation-logos {
+        gap: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .header-container {
+        padding: 0 10px;
+    }
+
+    .logos-section {
+        width: 100%;
+    }
+
+    .accreditation-logos {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .top-nav {
+        gap: 10px;
+        font-size: 0.75rem;
+    }
+
+    .nav-container {
+        gap: 10px;
+    }
+
+    .nav-container a {
+        font-size: 0.75rem;
+        padding: 8px 0;
+    }
+}
