@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import API from '../services/api';
 import '../pages/AdminDashboard.css';
+import '../styles/RejectionModal.css';
 
 const AdminHome = () => {
     const [activeTab, setActiveTab] = useState('add-coordinators');
@@ -11,6 +12,8 @@ const AdminHome = () => {
     const [attendanceData, setAttendanceData] = useState(null);
     const [analytics, setAnalytics] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [rejectionModal, setRejectionModal] = useState({ show: false, eventId: null, eventName: '' });
+    const [rejectionReason, setRejectionReason] = useState('');
 
     useEffect(() => {
         loadData();
@@ -38,9 +41,9 @@ const AdminHome = () => {
         setLoading(false);
     };
 
-    const handleAddCoordinator = async (email) => {
+    const handleAddCoordinator = async (email, department) => {
         try {
-            await API.post('/admin/allowed-coordinators', { email });
+            await API.post('/admin/allowed-coordinators', { email, department });
             alert('Coordinator email added successfully');
             loadData();
         } catch (err) {
@@ -69,16 +72,29 @@ const AdminHome = () => {
         }
     };
 
-    const handleRejectEvent = async (id) => {
-        const reason = prompt('Enter rejection reason:');
-        if (!reason) return;
+    const handleRejectEvent = async (eventId, eventName) => {
+        setRejectionModal({ show: true, eventId, eventName });
+    };
+
+    const submitRejection = async () => {
+        if (!rejectionReason.trim()) {
+            alert('Please enter a rejection reason');
+            return;
+        }
         try {
-            await API.put(`/admin/events/${id}/reject`, { reason });
+            await API.put(`/admin/events/${rejectionModal.eventId}/reject`, { reason: rejectionReason });
             alert('Event rejected');
+            setRejectionModal({ show: false, eventId: null, eventName: '' });
+            setRejectionReason('');
             loadData();
         } catch (err) {
             alert('Failed to reject event');
         }
+    };
+
+    const cancelRejection = () => {
+        setRejectionModal({ show: false, eventId: null, eventName: '' });
+        setRejectionReason('');
     };
 
     const handleDeleteEvent = async (id) => {
@@ -173,6 +189,16 @@ const AdminHome = () => {
                         onClose={() => setAttendanceData(null)}
                     />
                 )}
+
+                {rejectionModal.show && (
+                    <RejectionModal
+                        eventName={rejectionModal.eventName}
+                        reason={rejectionReason}
+                        onReasonChange={setRejectionReason}
+                        onSubmit={submitRejection}
+                        onCancel={cancelRejection}
+                    />
+                )}
             </div>
         </div>
     );
@@ -181,12 +207,14 @@ const AdminHome = () => {
 // Sub-components
 const AddCoordinators = ({ coordinators, onAdd, onRemove }) => {
     const [email, setEmail] = useState('');
+    const [department, setDepartment] = useState('');
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (email) {
-            onAdd(email);
+        if (email && department) {
+            onAdd(email, department);
             setEmail('');
+            setDepartment('');
         }
     };
 
@@ -194,7 +222,7 @@ const AddCoordinators = ({ coordinators, onAdd, onRemove }) => {
         <div className="approval-section">
             <h2>Manage Coordinators</h2>
 
-            <form onSubmit={handleSubmit} style={{ marginBottom: '30px', display: 'flex', gap: '10px' }}>
+            <form onSubmit={handleSubmit} style={{ marginBottom: '30px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                 <input
                     type="email"
                     value={email}
@@ -206,9 +234,30 @@ const AddCoordinators = ({ coordinators, onAdd, onRemove }) => {
                         borderRadius: '6px',
                         border: '1px solid #ddd',
                         flex: '1',
-                        maxWidth: '400px'
+                        minWidth: '250px'
                     }}
                 />
+                <select
+                    value={department}
+                    onChange={(e) => setDepartment(e.target.value)}
+                    required
+                    style={{
+                        padding: '10px',
+                        borderRadius: '6px',
+                        border: '1px solid #ddd',
+                        flex: '1',
+                        minWidth: '200px'
+                    }}
+                >
+                    <option value="">Select Department</option>
+                    <option value="CSE">CSE</option>
+                    <option value="CSBS">CSBS</option>
+                    <option value="IT">IT</option>
+                    <option value="ECE">ECE</option>
+                    <option value="EEE">EEE</option>
+                    <option value="MECH">MECH</option>
+                    <option value="CIVIL">CIVIL</option>
+                </select>
                 <button
                     type="submit"
                     style={{
@@ -234,6 +283,7 @@ const AddCoordinators = ({ coordinators, onAdd, onRemove }) => {
                         <thead>
                             <tr>
                                 <th>Email</th>
+                                <th>Department</th>
                                 <th>Added On</th>
                                 <th>Actions</th>
                             </tr>
@@ -242,6 +292,7 @@ const AddCoordinators = ({ coordinators, onAdd, onRemove }) => {
                             {coordinators.map(coord => (
                                 <tr key={coord._id}>
                                     <td>{coord.email}</td>
+                                    <td>{coord.department || 'N/A'}</td>
                                     <td>{new Date(coord.createdAt).toLocaleDateString()}</td>
                                     <td>
                                         <button
@@ -279,7 +330,7 @@ const PendingEvents = ({ events, onApprove, onReject }) => (
                             <button className="btn-approve" onClick={() => onApprove(event._id)}>
                                 ✓ Approve
                             </button>
-                            <button className="btn-reject" onClick={() => onReject(event._id)}>
+                            <button className="btn-reject" onClick={() => onReject(event._id, event.eventName)}>
                                 ✗ Reject
                             </button>
                         </div>
@@ -318,12 +369,58 @@ const AllEvents = ({ events, onDelete, onViewAttendance }) => (
                             <td>{event.organizer?.name}</td>
                             <td>{event.participants?.length || 0}</td>
                             <td className="action-buttons">
-                                {event.participants?.length > 0 && (
+                                {event.attendanceSheet && (
                                     <button
-                                        className="btn-secondary"
-                                        onClick={() => onViewAttendance(event._id)}
+                                        className="btn-success"
+                                        onClick={async () => {
+                                            try {
+                                                const response = await API.get(`/events/${event._id}/download-attendance`, {
+                                                    responseType: 'blob'
+                                                });
+                                                const url = window.URL.createObjectURL(new Blob([response.data]));
+                                                const link = document.createElement('a');
+                                                link.href = url;
+                                                link.setAttribute('download', event.attendanceSheet);
+                                                document.body.appendChild(link);
+                                                link.click();
+                                                link.remove();
+                                            } catch (err) {
+                                                alert('Failed to download attendance sheet');
+                                            }
+                                        }}
+                                        style={{
+                                            background: 'linear-gradient(135deg, #28a745 0%, #34ce57 100%)',
+                                            color: 'white'
+                                        }}
                                     >
-                                        Attendance
+                                        📥 Download Attendance
+                                    </button>
+                                )}
+                                {event.proofPhotos && event.proofPhotos.length > 0 && (
+                                    <button
+                                        className="btn-success"
+                                        onClick={async () => {
+                                            try {
+                                                const response = await API.get(`/events/${event._id}/download-proof-photos`, {
+                                                    responseType: 'blob'
+                                                });
+                                                const url = window.URL.createObjectURL(new Blob([response.data]));
+                                                const link = document.createElement('a');
+                                                link.href = url;
+                                                link.setAttribute('download', `${event.eventName}_proof_photos.zip`);
+                                                document.body.appendChild(link);
+                                                link.click();
+                                                link.remove();
+                                            } catch (err) {
+                                                alert('Failed to download proof photos');
+                                            }
+                                        }}
+                                        style={{
+                                            background: 'linear-gradient(135deg, #17a2b8 0%, #20c9e0 100%)',
+                                            color: 'white'
+                                        }}
+                                    >
+                                        📷 Download Photos ({event.proofPhotos.length})
                                     </button>
                                 )}
                                 <button
@@ -356,14 +453,6 @@ const Analytics = ({ data }) => (
             <div className="stat-card">
                 <h3>{data.summary.pendingEvents}</h3>
                 <p>Pending Events</p>
-            </div>
-            <div className="stat-card">
-                <h3>{data.summary.totalRegistrations}</h3>
-                <p>Total Registrations</p>
-            </div>
-            <div className="stat-card">
-                <h3>{data.summary.totalAttendance}</h3>
-                <p>Total Attendance</p>
             </div>
         </div>
     </div>
@@ -429,6 +518,45 @@ const AttendanceModal = ({ data, onClose }) => {
                             </span>
                         </div>
                     ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const RejectionModal = ({ eventName, reason, onReasonChange, onSubmit, onCancel }) => {
+    return (
+        <div className="modal-overlay" onClick={onCancel}>
+            <div className="modal-content rejection-modal" onClick={(e) => e.stopPropagation()}>
+                <button className="modal-close" onClick={onCancel}>×</button>
+                <div className="rejection-modal-header">
+                    <h2>Reject Event</h2>
+                    <p className="event-name-highlight">{eventName}</p>
+                </div>
+                <div className="rejection-modal-body">
+                    <label htmlFor="rejection-reason">
+                        <strong>Reason for Rejection</strong>
+                        <span className="required-indicator">*</span>
+                    </label>
+                    <textarea
+                        id="rejection-reason"
+                        value={reason}
+                        onChange={(e) => onReasonChange(e.target.value)}
+                        placeholder="Please provide a clear reason for rejecting this event..."
+                        rows="5"
+                        autoFocus
+                    />
+                    <p className="helper-text">
+                        This reason will be sent to the coordinator via email and displayed in their dashboard.
+                    </p>
+                </div>
+                <div className="rejection-modal-footer">
+                    <button className="btn-cancel" onClick={onCancel}>
+                        Cancel
+                    </button>
+                    <button className="btn-submit-rejection" onClick={onSubmit}>
+                        Confirm Rejection
+                    </button>
                 </div>
             </div>
         </div>

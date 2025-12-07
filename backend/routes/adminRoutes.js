@@ -21,6 +21,7 @@ const {
     removeAllowedCoordinator
 } = require('../controllers/adminController');
 const { protect, authorize } = require('../middleware/authMiddleware');
+const upload = require('../middleware/uploadMiddleware');
 const router = express.Router();
 
 router.get('/stats', protect, authorize('admin'), getStats);
@@ -42,7 +43,7 @@ router.delete('/allowed-coordinators/:id', protect, authorize('admin'), removeAl
 router.get('/events/pending', protect, authorize('admin'), getPendingEvents);
 router.put('/events/:id/approve', protect, authorize('admin'), approveEvent);
 router.put('/events/:id/reject', protect, authorize('admin'), rejectEvent);
-router.put('/events/:id', protect, authorize('admin'), updateEvent);
+router.put('/events/:id', protect, authorize('admin'), upload.single('poster'), updateEvent);
 router.delete('/events/:id', protect, authorize('admin'), deleteEvent);
 
 // Attendance tracking routes

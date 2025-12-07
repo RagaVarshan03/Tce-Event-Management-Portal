@@ -60,10 +60,14 @@ exports.registerCoordinator = async (req, res) => {
     try {
         const { name, email, password, department } = req.body;
 
-        // Check if email is allowed
+        // Check if email and department are allowed
         const isAllowed = await AllowedCoordinator.findOne({ email });
         if (!isAllowed) {
             return res.status(403).json({ message: 'This email is not authorized to register as a coordinator. Please contact the administrator.' });
+        }
+
+        if (isAllowed.department !== department) {
+            return res.status(403).json({ message: `This email is authorized for ${isAllowed.department} department only, not ${department}.` });
         }
 
         const coordinator = await Coordinator.create({
@@ -82,10 +86,16 @@ exports.registerCoordinator = async (req, res) => {
 
 exports.loginCoordinator = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email, password, department } = req.body;
         const coordinator = await Coordinator.findOne({ email });
+
         if (!coordinator || !(await coordinator.matchPassword(password))) {
             return res.status(401).json({ message: 'Invalid credentials' });
+        }
+
+        // Verify Department
+        if (department && coordinator.department !== department) {
+            return res.status(401).json({ message: 'Invalid credentials. Department mismatch.' });
         }
 
         // Check if coordinator is approved
@@ -121,8 +131,8 @@ exports.registerAdmin = async (req, res) => {
     try {
         const { name, email, password } = req.body;
 
-        if (!email.endsWith('@tce.edu.in')) {
-            return res.status(400).json({ message: 'Only @tce.edu.in emails are allowed for admin registration.' });
+        if (!email.endsWith('@tce.edu')) {
+            return res.status(400).json({ message: 'Only @tce.edu emails are allowed for admin registration.' });
         }
 
         const admin = await Admin.create({ name, email, password });
@@ -136,8 +146,8 @@ exports.loginAdmin = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        if (!email.endsWith('@tce.edu.in')) {
-            return res.status(400).json({ message: 'Only @tce.edu.in emails are allowed for admin login.' });
+        if (!email.endsWith('@tce.edu')) {
+            return res.status(400).json({ message: 'Only @tce.edu emails are allowed for admin login.' });
         }
 
         const admin = await Admin.findOne({ email });

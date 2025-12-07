@@ -97,7 +97,16 @@ const Signup = () => {
                     {role !== 'admin' && (
                         <div className="form-group">
                             <label>Department</label>
-                            <input type="text" name="department" onChange={handleChange} required />
+                            <select name="department" value={formData.department} onChange={handleChange} required>
+                                <option value="">Select Department</option>
+                                <option value="CSE">Computer Science and Engineering (CSE)</option>
+                                <option value="CSBS">Computer Science and Business Systems (CSBS)</option>
+                                <option value="IT">Information Technology (IT)</option>
+                                <option value="ECE">Electronics and Communication Engineering (ECE)</option>
+                                <option value="EEE">Electrical and Electronics Engineering (EEE)</option>
+                                <option value="MECH">Mechanical Engineering (MECH)</option>
+                                <option value="CIVIL">Civil Engineering (CIVIL)</option>
+                            </select>
                         </div>
                     )}
                     <button type="submit" className="auth-btn">Sign Up</button>

@@ -8,6 +8,11 @@ const allowedCoordinatorSchema = new mongoose.Schema({
         trim: true,
         lowercase: true
     },
+    department: {
+        type: String,
+        required: true,
+        trim: true
+    },
     addedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Admin'

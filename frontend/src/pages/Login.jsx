@@ -13,12 +13,18 @@ const Login = () => {
     const navigate = useNavigate();
     const [error, setError] = useState('');
 
+    const [department, setDepartment] = useState('');
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const res = await API.post(`/auth/${role}/login`, { email, password });
+            const payload = { email, password };
+            if (role === 'coordinator') {
+                payload.department = department;
+            }
+            const res = await API.post(`/auth/${role}/login`, payload);
             login(res.data.user, res.data.token);
-            navigate(role === 'student' ? '/student/dashboard' : role === 'coordinator' ? '/coordinator/dashboard' : '/admin/dashboard');
+            navigate('/');
         } catch (err) {
             setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
         }
@@ -59,6 +65,44 @@ const Login = () => {
                         <label>Password</label>
                         <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
                     </div>
+                    {role === 'coordinator' && (
+                        <div className="form-group">
+                            <label>Department</label>
+                            <select
+                                value={department}
+                                onChange={(e) => setDepartment(e.target.value)}
+                                required
+                            >
+                                <option value="">Select Department</option>
+                                <option value="CSE">Computer Science and Engineering (CSE)</option>
+                                <option value="CSBS">Computer Science and Business Systems (CSBS)</option>
+                                <option value="IT">Information Technology (IT)</option>
+                                <option value="ECE">Electronics and Communication Engineering (ECE)</option>
+                                <option value="EEE">Electrical and Electronics Engineering (EEE)</option>
+                                <option value="MECH">Mechanical Engineering (MECH)</option>
+                                <option value="CIVIL">Civil Engineering (CIVIL)</option>
+                            </select>
+                        </div>
+                    )}
+                    {role === 'student' && (
+                        <div className="form-group">
+                            <label>Department</label>
+                            <select
+                                value={department}
+                                onChange={(e) => setDepartment(e.target.value)}
+                                required
+                            >
+                                <option value="">Select Department</option>
+                                <option value="CSE">Computer Science and Engineering (CSE)</option>
+                                <option value="CSBS">Computer Science and Business Systems (CSBS)</option>
+                                <option value="IT">Information Technology (IT)</option>
+                                <option value="ECE">Electronics and Communication Engineering (ECE)</option>
+                                <option value="EEE">Electrical and Electronics Engineering (EEE)</option>
+                                <option value="MECH">Mechanical Engineering (MECH)</option>
+                                <option value="CIVIL">Civil Engineering (CIVIL)</option>
+                            </select>
+                        </div>
+                    )}
                     <button type="submit" className="auth-btn">Login</button>
                 </form>
                 <p className="auth-link">Don't have an account? <a href="/signup">Sign up</a></p>

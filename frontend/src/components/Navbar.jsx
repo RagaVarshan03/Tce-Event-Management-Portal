@@ -45,7 +45,7 @@ const Navbar = () => {
                     <div className="top-nav">
                         {user ? (
                             <>
-                                <span className="user-greeting">Hi, {user.role === 'coordinator' ? 'Coordinator' : user.name || user.email?.split('@')[0]}</span>
+                                <span className="user-greeting">Hi, {user.name || user.email?.split('@')[0]}</span>
                                 <button onClick={handleLogout} className="logout-btn-top">Logout</button>
                             </>
                         ) : (
@@ -76,8 +76,6 @@ const Navbar = () => {
                                 {user.role === 'admin' && <Link to="/admin/dashboard" className="nav-link" onClick={closeMenu}>Dashboard</Link>}
                             </>
                         )}
-
-                        <Link to="/#contact" className="nav-link" onClick={closeMenu}>Contact</Link>
                     </div>
                 </div>
             </nav>

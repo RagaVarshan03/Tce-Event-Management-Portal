@@ -57,6 +57,14 @@ const StudentHome = () => {
         return myEvents.some(e => e._id === eventId);
     };
 
+    const isEventPast = (eventDate) => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Set to start of day for accurate comparison
+        const eventDay = new Date(eventDate);
+        eventDay.setHours(0, 0, 0, 0);
+        return eventDay < today;
+    };
+
     return (
         <div className="dashboard-container">
             <div className="dashboard-content">
@@ -77,20 +85,32 @@ const StudentHome = () => {
 
                 {activeTab === 'all' ? (
                     <div className="card-grid">
-                        {events.map(event => (
-                            <div key={event._id} className="event-card">
-                                <h3>{event.eventName}</h3>
-                                <p>{event.description}</p>
-                                <p><strong>Date:</strong> {new Date(event.date).toDateString()}</p>
-                                <p><strong>Venue:</strong> {event.venue}</p>
-                                <p><strong>Organizer:</strong> {event.organizer?.name}</p>
-                                {isRegistered(event._id) ? (
-                                    <button className="registered-btn" disabled>Registered</button>
-                                ) : (
-                                    <button onClick={() => openRegistrationModal(event)} className="register-btn">Register</button>
-                                )}
-                            </div>
-                        ))}
+                        {events.map(event => {
+                            const isPast = isEventPast(event.date);
+                            const registered = isRegistered(event._id);
+
+                            return (
+                                <div key={event._id} className="event-card">
+                                    <h3>{event.eventName}</h3>
+                                    <p>{event.description}</p>
+                                    <p><strong>Date:</strong> {new Date(event.date).toDateString()}</p>
+                                    <p><strong>Venue:</strong> {event.venue}</p>
+                                    <p><strong>Organizer:</strong> {event.organizer?.name}</p>
+                                    {isPast ? (
+                                        <button className="event-over-btn" disabled style={{
+                                            background: 'linear-gradient(135deg, #6c757d 0%, #5a6268 100%)',
+                                            color: 'white',
+                                            cursor: 'not-allowed',
+                                            opacity: 0.7
+                                        }}>Event Over</button>
+                                    ) : registered ? (
+                                        <button className="registered-btn" disabled>Registered</button>
+                                    ) : (
+                                        <button onClick={() => openRegistrationModal(event)} className="register-btn">Register</button>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 ) : (
                     <div className="card-grid">

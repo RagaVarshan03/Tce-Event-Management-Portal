@@ -232,6 +232,71 @@ const emailTemplates = {
                 </div>
             </div>
         `
+    }),
+
+    eventUpdate: (studentName, studentEmail, eventName, changes) => ({
+        from: '"TCE Event Management Portal" <raga@student.tce.edu>',
+        to: studentEmail,
+        subject: `Update: ${eventName}`,
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: #ffc107; color: black; padding: 20px; text-align: center;">
+                    <h2>Event Update Notification</h2>
+                </div>
+                <div style="padding: 20px; background: #f9f9f9;">
+                    <p>Dear ${studentName},</p>
+                    <p>There have been some changes to the event you registered for:</p>
+                    <h3 style="color: #830000;">${eventName}</h3>
+                    
+                    <div style="background: white; padding: 15px; border-left: 4px solid #ffc107; margin: 15px 0;">
+                        <strong>Changes Made:</strong>
+                        <ul style="margin: 10px 0; padding-left: 20px;">
+                            ${changes.map(change => `<li>${change}</li>`).join('')}
+                        </ul>
+                    </div>
+
+                    <p>Please check your student dashboard for the most up-to-date details.</p>
+                    <hr style="margin: 20px 0;">
+                    <div style="background: white; padding: 15px; border-left: 4px solid #830000;">
+                        <h3 style="margin-top: 0;">Contact Information</h3>
+                        <p><strong>Thiagarajar College of Engineering</strong></p>
+                        <p>Madurai - 625 015</p>
+                        <p>Tamil Nadu, India</p>
+                        <p>📞 +91 452 2482240</p>
+                        <p>🌐 www.tce.edu</p>
+                    </div>
+                </div>
+            </div>
+        `
+    }),
+
+    certificateDistribution: (studentName, studentEmail, eventName) => ({
+        from: '"TCE Event Management Portal" <raga@student.tce.edu>',
+        to: studentEmail,
+        subject: `Certificate of Participation: ${eventName}`,
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: #28a745; color: white; padding: 20px; text-align: center;">
+                    <h2>Certificate of Participation</h2>
+                </div>
+                <div style="padding: 20px; background: #f9f9f9;">
+                    <p>Dear ${studentName},</p>
+                    <p>Thank you for participating in <strong>${eventName}</strong>.</p>
+                    <p>We are pleased to present you with this Certificate of Participation.</p>
+                    <p>Please find your certificate attached to this email.</p>
+                    <p>We look forward to your active participation in our future events.</p>
+                    <hr style="margin: 20px 0;">
+                    <div style="background: white; padding: 15px; border-left: 4px solid #830000;">
+                        <h3 style="margin-top: 0;">Contact Information</h3>
+                        <p><strong>Thiagarajar College of Engineering</strong></p>
+                        <p>Madurai - 625 015</p>
+                        <p>Tamil Nadu, India</p>
+                        <p>📞 +91 452 2482240</p>
+                        <p>🌐 www.tce.edu</p>
+                    </div>
+                </div>
+            </div>
+        `
     })
 };
 

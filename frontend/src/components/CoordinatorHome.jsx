@@ -2,6 +2,9 @@ import React, { useState, useEffect, useContext } from 'react';
 import API from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import AttendanceUploadModal from './AttendanceUploadModal';
+import ProofPhotosUploadModal from './ProofPhotosUploadModal';
+import EditEventModal from './EditEventModal';
 import '../pages/Dashboard.css';
 
 const CoordinatorHome = () => {
@@ -12,8 +15,19 @@ const CoordinatorHome = () => {
         eventName: '',
         description: '',
         date: '',
-        venue: ''
+        venue: '',
+        clubName: ''
     });
+    const [timeData, setTimeData] = useState({
+        hour: '12',
+        minute: '00',
+        period: 'AM'
+    });
+    const [posterFile, setPosterFile] = useState(null);
+    const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+    const [showProofPhotosModal, setShowProofPhotosModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [selectedEvent, setSelectedEvent] = useState(null);
 
     useEffect(() => {
         fetchEvents();
@@ -32,12 +46,51 @@ const CoordinatorHome = () => {
         setNewEvent({ ...newEvent, [e.target.name]: e.target.value });
     };
 
+    const handleTimeChange = (e) => {
+        setTimeData({ ...timeData, [e.target.name]: e.target.value });
+    };
+
+    const handleFileChange = (e) => {
+        setPosterFile(e.target.files[0]);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await API.post('/events/create', newEvent);
+            const formData = new FormData();
+            formData.append('eventName', newEvent.eventName);
+            formData.append('description', newEvent.description);
+
+            // Combine Date and Time
+            let hours = parseInt(timeData.hour);
+            if (timeData.period === 'PM' && hours !== 12) hours += 12;
+            if (timeData.period === 'AM' && hours === 12) hours = 0;
+
+            const eventDateTime = new Date(newEvent.date);
+            eventDateTime.setHours(hours, parseInt(timeData.minute));
+
+            formData.append('date', eventDateTime.toISOString());
+            formData.append('venue', newEvent.venue);
+            if (newEvent.clubName) {
+                formData.append('clubName', newEvent.clubName);
+            }
+            if (posterFile) {
+                formData.append('poster', posterFile);
+            }
+
+            await API.post('/events/create', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
             alert('Event created! It will be visible to students after admin approval.');
-            setNewEvent({ eventName: '', description: '', date: '', venue: '' });
+            alert('Event created! It will be visible to students after admin approval.');
+            setNewEvent({ eventName: '', description: '', date: '', venue: '', clubName: '' });
+            setTimeData({ hour: '12', minute: '00', period: 'AM' });
+            setPosterFile(null);
+            // Reset file input
+            const fileInput = document.querySelector('input[type="file"]');
+            if (fileInput) fileInput.value = '';
             fetchEvents();
         } catch (err) {
             console.error('Error creating event:', err);
@@ -66,13 +119,54 @@ const CoordinatorHome = () => {
         );
     };
 
+    const isEventPast = (eventDate) => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const eventDay = new Date(eventDate);
+        eventDay.setHours(0, 0, 0, 0);
+        return eventDay < today;
+    };
+
+    const handleUploadAttendance = (event) => {
+        setSelectedEvent(event);
+        setShowAttendanceModal(true);
+    };
+
+    const handleUploadProofPhotos = (event) => {
+        setSelectedEvent(event);
+        setShowProofPhotosModal(true);
+    };
+
+    const handleEditEvent = (event) => {
+        setSelectedEvent(event);
+        setShowEditModal(true);
+    };
+
+    const handleDistributeCertificates = async (event) => {
+        if (!window.confirm(`Are you sure you want to generate and email certificates to all ${event.participants?.length || 0} participants for "${event.eventName}"?`)) {
+            return;
+        }
+        try {
+            alert('Starting certificate distribution. This may take a moment...');
+            const res = await API.post(`/events/${event._id}/distribute-certificates`);
+            alert(res.data.message);
+        } catch (err) {
+            console.error('Error distributing certificates:', err);
+            alert(err.response?.data?.message || 'Failed to distribute certificates');
+        }
+    };
+
+    const handleUploadSuccess = () => {
+        fetchEvents();
+    };
+
     return (
         <div className="dashboard-container">
             <div className="dashboard-content">
                 <div className="card">
                     <h3>Create New Event</h3>
                     <p style={{ color: '#666', fontSize: '14px', marginBottom: '15px' }}>
-                        ℹ️ Events will be submitted for admin approval before being visible to students
+                        Events will be submitted for admin approval before being visible to students
                     </p>
                     <form onSubmit={handleSubmit}>
                         <div className="form-group">
@@ -88,8 +182,67 @@ const CoordinatorHome = () => {
                             <input type="date" name="date" value={newEvent.date} onChange={handleChange} required />
                         </div>
                         <div className="form-group">
+                            <label>Time</label>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <select
+                                    name="hour"
+                                    value={timeData.hour}
+                                    onChange={handleTimeChange}
+                                    style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+                                >
+                                    {Array.from({ length: 12 }, (_, i) => i + 1).map(h => (
+                                        <option key={h} value={h}>{h}</option>
+                                    ))}
+                                </select>
+                                <select
+                                    name="minute"
+                                    value={timeData.minute}
+                                    onChange={handleTimeChange}
+                                    style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+                                >
+                                    {Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0')).map(m => (
+                                        <option key={m} value={m}>{m}</option>
+                                    ))}
+                                </select>
+                                <select
+                                    name="period"
+                                    value={timeData.period}
+                                    onChange={handleTimeChange}
+                                    style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+                                >
+                                    <option value="AM">AM</option>
+                                    <option value="PM">PM</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div className="form-group">
                             <label>Venue</label>
                             <input type="text" name="venue" value={newEvent.venue} onChange={handleChange} required />
+                        </div>
+                        <div className="form-group">
+                            <label>Club Name</label>
+                            <select name="clubName" value={newEvent.clubName} onChange={handleChange}>
+                                <option value="">Select a club</option>
+                                <option value="IEEE CIS">IEEE CIS</option>
+                                <option value="TECH EXPLORERS">TECH EXPLORERS</option>
+                                <option value="CSBSA">CSBSA</option>
+                                <option value="ASI">ASI</option>
+                                <option value="CODERS CLUB">CODERS CLUB</option>
+                            </select>
+                        </div>
+                        <div className="form-group">
+                            <label>Event Poster</label>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleFileChange}
+                                style={{ padding: '8px' }}
+                            />
+                            {posterFile && (
+                                <small style={{ color: '#28a745', display: 'block', marginTop: '5px' }}>
+                                    ✓ Selected: {posterFile.name}
+                                </small>
+                            )}
                         </div>
                         <button type="submit" className="action-btn">Create Event</button>
                     </form>
@@ -106,11 +259,25 @@ const CoordinatorHome = () => {
                                     <div style={{ flex: 1 }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
                                             <h4 style={{ margin: 0 }}>{event.eventName}</h4>
+                                            {isEventPast(event.date) && event.status === 'approved' && (
+                                                <span style={{
+                                                    backgroundColor: '#6c757d',
+                                                    color: 'white',
+                                                    padding: '4px 12px',
+                                                    borderRadius: '12px',
+                                                    fontSize: '12px',
+                                                    fontWeight: '600'
+                                                }}>
+                                                    Event Over
+                                                </span>
+                                            )}
                                             {getStatusBadge(event.status)}
                                         </div>
                                         <p style={{ margin: '5px 0', color: '#666' }}>{event.description}</p>
                                         <small style={{ color: '#999' }}>
-                                            📅 {new Date(event.date).toDateString()} | 📍 {event.venue}
+                                            <small style={{ color: '#999' }}>
+                                                📅 {new Date(event.date).toLocaleDateString()} | ⏰ {new Date(event.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} | 📍 {event.venue}
+                                            </small>
                                         </small>
                                         {event.status === 'rejected' && event.rejectionReason && (
                                             <div style={{
@@ -125,15 +292,132 @@ const CoordinatorHome = () => {
                                             </div>
                                         )}
                                     </div>
-                                    {event.status === 'approved' && (
-                                        <span className="badge">{event.participants?.length || 0} Participants</span>
-                                    )}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end' }}>
+                                        {event.status === 'approved' && (
+                                            <span className="badge">{event.participants?.length || 0} Participants</span>
+                                        )}
+                                        {event.status === 'approved' && isEventPast(event.date) && (
+                                            <button
+                                                onClick={() => handleUploadAttendance(event)}
+                                                style={{
+                                                    padding: '8px 16px',
+                                                    background: 'linear-gradient(135deg, #830000 0%, #a00000 100%)',
+                                                    color: 'white',
+                                                    border: 'none',
+                                                    borderRadius: '6px',
+                                                    cursor: 'pointer',
+                                                    fontSize: '13px',
+                                                    fontWeight: '600',
+                                                    transition: 'all 0.3s ease'
+                                                }}
+                                                onMouseOver={(e) => e.target.style.transform = 'translateY(-2px)'}
+                                                onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
+                                            >
+                                                {event.attendanceSheet ? '📝 Update Attendance' : '📤 Upload Attendance'}
+                                            </button>
+                                        )}
+                                        {event.status === 'approved' && isEventPast(event.date) && (
+                                            <button
+                                                onClick={() => handleUploadProofPhotos(event)}
+                                                style={{
+                                                    padding: '8px 16px',
+                                                    background: 'linear-gradient(135deg, #28a745 0%, #34ce57 100%)',
+                                                    color: 'white',
+                                                    border: 'none',
+                                                    borderRadius: '6px',
+                                                    cursor: 'pointer',
+                                                    fontSize: '13px',
+                                                    fontWeight: '600',
+                                                    transition: 'all 0.3s ease'
+                                                }}
+                                                onMouseOver={(e) => e.target.style.transform = 'translateY(-2px)'}
+                                                onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
+                                            >
+                                                {event.proofPhotos?.length > 0
+                                                    ? `📸 Manage Photos (${event.proofPhotos.length}/5)`
+                                                    : '📸 Upload Photos (0/5)'}
+                                            </button>
+                                        )}
+                                        {event.status === 'approved' && isEventPast(event.date) && (
+                                            <button
+                                                onClick={() => handleDistributeCertificates(event)}
+                                                style={{
+                                                    padding: '8px 16px',
+                                                    background: 'linear-gradient(135deg, #ffc107 0%, #ffca2c 100%)',
+                                                    color: '#000',
+                                                    border: 'none',
+                                                    borderRadius: '6px',
+                                                    cursor: 'pointer',
+                                                    fontSize: '13px',
+                                                    fontWeight: '600',
+                                                    transition: 'all 0.3s ease'
+                                                }}
+                                                onMouseOver={(e) => e.target.style.transform = 'translateY(-2px)'}
+                                                onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
+                                            >
+                                                🎓 Distribute Certificates
+                                            </button>
+                                        )}
+                                        {(event.status === 'pending' || (event.status === 'approved' && !isEventPast(event.date))) && (
+                                            <button
+                                                onClick={() => handleEditEvent(event)}
+                                                style={{
+                                                    padding: '8px 16px',
+                                                    background: 'linear-gradient(135deg, #007bff 0%, #0056b3 100%)',
+                                                    color: 'white',
+                                                    border: 'none',
+                                                    borderRadius: '6px',
+                                                    cursor: 'pointer',
+                                                    fontSize: '13px',
+                                                    fontWeight: '600',
+                                                    transition: 'all 0.3s ease'
+                                                }}
+                                                onMouseOver={(e) => e.target.style.transform = 'translateY(-2px)'}
+                                                onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
+                                            >
+                                                ✏️ Edit
+                                            </button>
+                                        )}
+                                    </div>
                                 </li>
                             ))}
                         </ul>
                     )}
                 </div>
             </div>
+
+            {showAttendanceModal && selectedEvent && (
+                <AttendanceUploadModal
+                    event={selectedEvent}
+                    onClose={() => {
+                        setShowAttendanceModal(false);
+                        setSelectedEvent(null);
+                    }}
+                    onUploadSuccess={handleUploadSuccess}
+                />
+            )}
+
+            {showProofPhotosModal && selectedEvent && (
+                <ProofPhotosUploadModal
+                    event={selectedEvent}
+                    onClose={() => {
+                        setShowProofPhotosModal(false);
+                        setSelectedEvent(null);
+                    }}
+                    onUploadSuccess={handleUploadSuccess}
+                />
+            )}
+
+            {showEditModal && selectedEvent && (
+                <EditEventModal
+                    event={selectedEvent}
+                    onClose={() => {
+                        setShowEditModal(false);
+                        setSelectedEvent(null);
+                    }}
+                    onUpdateSuccess={fetchEvents}
+                />
+            )}
         </div>
     );
 };

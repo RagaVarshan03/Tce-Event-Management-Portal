@@ -2,6 +2,7 @@ const Student = require('../models/Student');
 const Event = require('../models/Event');
 const Coordinator = require('../models/Coordinator');
 const AllowedCoordinator = require('../models/AllowedCoordinator');
+const { sendEmail, emailTemplates } = require('../services/emailService');
 
 exports.getStats = async (req, res) => {
     try {
@@ -68,9 +69,12 @@ exports.getPendingCoordinators = async (req, res) => {
 // Add allowed coordinator
 exports.addAllowedCoordinator = async (req, res) => {
     try {
-        const { email } = req.body;
+        const { email, department } = req.body;
         if (!email) {
             return res.status(400).json({ message: 'Email is required' });
+        }
+        if (!department) {
+            return res.status(400).json({ message: 'Department is required' });
         }
 
         const existing = await AllowedCoordinator.findOne({ email });
@@ -80,6 +84,7 @@ exports.addAllowedCoordinator = async (req, res) => {
 
         const allowed = await AllowedCoordinator.create({
             email,
+            department,
             addedBy: req.user.id
         });
 
@@ -224,6 +229,24 @@ exports.rejectEvent = async (req, res) => {
         }
 
         res.json({ message: 'Event rejected', event });
+
+        // Send rejection email to coordinator
+        if (event.organizer && event.organizer.email) {
+            const emailOptions = emailTemplates.eventRejected(
+                event.organizer.name,
+                event.organizer.email,
+                event.eventName,
+                reason || 'No reason provided'
+            );
+
+            sendEmail(emailOptions).then(result => {
+                if (result.success) {
+                    console.log(`Rejection email sent to ${event.organizer.email}`);
+                } else {
+                    console.error(`Failed to send rejection email to ${event.organizer.email}:`, result.error);
+                }
+            });
+        }
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -232,10 +255,29 @@ exports.rejectEvent = async (req, res) => {
 // Edit any event (Admin only)
 exports.updateEvent = async (req, res) => {
     try {
-        const { eventName, description, date, venue } = req.body;
+        const { eventName, description, date, venue, clubName } = req.body;
+
+        // Build update object
+        const updateData = {
+            eventName,
+            description,
+            date,
+            venue
+        };
+
+        // Add clubName if provided
+        if (clubName !== undefined) {
+            updateData.clubName = clubName;
+        }
+
+        // Add poster if file was uploaded
+        if (req.file) {
+            updateData.poster = req.file.filename;
+        }
+
         const event = await Event.findByIdAndUpdate(
             req.params.id,
-            { eventName, description, date, venue },
+            updateData,
             { new: true, runValidators: true }
         ).populate('organizer', 'name email');
 
