@@ -27,7 +27,7 @@ const NotificationCenter = () => {
                             notifications.map((notif, idx) => (
                                 <div key={idx} className="notif-item">
                                     <div className="notif-msg">{notif.message}</div>
-                                    <div className="notif-time">{new Date(notif.date).toLocaleTimeString()}</div>
+                                    <div className="notif-time">{new Date(notif.createdAt || notif.date).toLocaleString()}</div>
                                 </div>
                             ))
                         )}

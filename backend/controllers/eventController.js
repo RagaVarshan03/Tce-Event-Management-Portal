@@ -1,5 +1,6 @@
 const Event = require('../models/Event');
 const Student = require('../models/Student');
+const Notification = require('../models/Notification');
 const { sendEmail, emailTemplates } = require('../services/emailService');
 const { generateCertificate } = require('../services/certificateService');
 const path = require('path');
@@ -267,16 +268,29 @@ exports.requestFeedback = async (req, res) => {
         }
 
         // Send emails
-        event.participants.forEach(student => {
-            if (student.email) {
-                sendEmail(emailTemplates.feedbackRequest(
-                    student.name,
-                    student.email,
-                    event.eventName,
-                    event._id
-                ));
-            }
-        });
+        // Create notifications for all participants
+        const notifications = event.participants.map(student => ({
+            recipient: student._id,
+            message: `Feedback requested for event: ${event.eventName}`,
+            type: 'FEEDBACK_REQUEST',
+            relatedId: event._id
+        }));
+
+        if (notifications.length > 0) {
+            await Notification.insertMany(notifications);
+
+            // Real-time socket notification
+            const io = require('../services/socketService').getIO();
+            event.participants.forEach(student => {
+                io.emit('newNotification', {
+                    recipient: student._id,
+                    message: `Feedback requested for event: ${event.eventName}`,
+                    type: 'FEEDBACK_REQUEST',
+                    relatedId: event._id,
+                    date: new Date()
+                });
+            });
+        }
 
         event.feedbackEmailSent = true;
         await event.save();

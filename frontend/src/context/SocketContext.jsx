@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
+import API from '../services/api';
 
 const SocketContext = createContext();
 
@@ -10,23 +11,55 @@ export const SocketProvider = ({ children }) => {
     const [notifications, setNotifications] = useState([]);
 
     useEffect(() => {
-        // Force refresh - pointing to backend port 4000
-        const newSocket = io('http://localhost:4000'); // Use port 4000 to match backend
+        // Fetch existing notifications
+        const fetchNotifications = async () => {
+            try {
+                const res = await API.get('/notifications');
+                setNotifications(res.data);
+            } catch (err) {
+                console.error('Error fetching notifications:', err);
+            }
+        };
+        fetchNotifications();
+
+        // Determine Socket URL (Base URL without /api)
+        const socketURL = import.meta.env.VITE_API_URL
+            ? import.meta.env.VITE_API_URL.replace('/api', '')
+            : 'http://localhost:4000';
+
+        const newSocket = io(socketURL); // Connect to dynamic URL
         setSocket(newSocket);
 
         newSocket.on('newNotification', (notification) => {
             setNotifications(prev => [notification, ...prev]);
-            // You can also trigger a toast here if you have a toast library
             console.log('[Socket] New Notification:', notification);
         });
 
         return () => newSocket.close();
     }, []);
 
-    const clearNotifications = () => setNotifications([]);
+    const clearNotifications = async () => {
+        try {
+            await API.put('/notifications/mark-all-read');
+            setNotifications([]);
+        } catch (err) {
+            console.error('Error clearing notifications:', err);
+        }
+    };
+
+    const markAsRead = async (id) => {
+        try {
+            await API.put(`/notifications/${id}/read`);
+            setNotifications(prev =>
+                prev.map(n => n._id === id ? { ...n, isRead: true } : n)
+            );
+        } catch (err) {
+            console.error('Error marking notification as read:', err);
+        }
+    };
 
     return (
-        <SocketContext.Provider value={{ socket, notifications, clearNotifications }}>
+        <SocketContext.Provider value={{ socket, notifications, clearNotifications, markAsRead }}>
             {children}
         </SocketContext.Provider>
     );
