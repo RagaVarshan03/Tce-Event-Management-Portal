@@ -4,6 +4,8 @@ const Admin = require('../models/Admin');
 const AllowedCoordinator = require('../models/AllowedCoordinator');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { OAuth2Client } = require('google-auth-library');
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const { sendEmail, emailTemplates } = require('../services/emailService');
 
 const generateToken = (id, role) => {
@@ -160,5 +162,81 @@ exports.loginAdmin = async (req, res) => {
         });
     } catch (error) {
         res.status(500).json({ error: error.message });
+    }
+};
+
+exports.googleLogin = async (req, res) => {
+    try {
+        const { token, accessToken, role } = req.body;
+        let email, name, picture;
+
+        if (token) {
+            const ticket = await client.verifyIdToken({
+                idToken: token,
+                audience: process.env.GOOGLE_CLIENT_ID
+            });
+            const payload = ticket.getPayload();
+            email = payload.email;
+            name = payload.name;
+            picture = payload.picture;
+        } else if (accessToken) {
+            // Fetch user info using access token
+            const response = await fetch(`https://www.googleapis.com/oauth2/v3/userinfo?access_token=${accessToken}`);
+            const data = await response.json();
+            if (!data.email) {
+                return res.status(400).json({ message: 'Invalid access token' });
+            }
+            email = data.email;
+            name = data.name;
+            picture = data.picture;
+        } else {
+            return res.status(400).json({ message: 'No token provided' });
+        }
+
+        if (!email.endsWith('@student.tce.edu')) {
+            return res.status(400).json({ message: 'Only @student.tce.edu emails are allowed.' });
+        }
+
+        if (role === 'student') {
+            let student = await Student.findOne({ email });
+            if (!student) {
+                // Return data for pre-filling signup form
+                return res.status(200).json({
+                    isNewUser: true,
+                    user: { email, name, role: 'student' }
+                });
+            }
+            return res.json({
+                token: generateToken(student._id, 'student'),
+                user: { ...student._doc, role: 'student' }
+            });
+        } else if (role === 'coordinator') {
+            let coordinator = await Coordinator.findOne({ email });
+            if (!coordinator) {
+                // Check if pre-authorized
+                const isAllowed = await AllowedCoordinator.findOne({ email });
+                if (!isAllowed) {
+                    return res.status(403).json({ message: 'This email is not authorized to register as a coordinator.' });
+                }
+                // Auto-register since we have the department from AllowedCoordinator
+                coordinator = await Coordinator.create({
+                    name,
+                    email,
+                    password: Math.random().toString(36).slice(-10), // Random password
+                    department: isAllowed.department,
+                    isApproved: true,
+                    approvedAt: new Date()
+                });
+            }
+            return res.json({
+                token: generateToken(coordinator._id, 'coordinator'),
+                user: { ...coordinator._doc, role: 'coordinator' }
+            });
+        } else {
+            return res.status(400).json({ message: 'Invalid role for Google login.' });
+        }
+    } catch (error) {
+        console.error('Google Auth Error:', error);
+        res.status(500).json({ error: 'Google authentication failed' });
     }
 };

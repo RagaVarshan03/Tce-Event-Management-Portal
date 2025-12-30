@@ -22,7 +22,17 @@ const eventSchema = new mongoose.Schema({
     attendanceUploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Coordinator' },
     proofPhotos: [{ type: String }], // Array of filenames (max 5)
     proofPhotosUploadedAt: { type: Date },
-    proofPhotosUploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Coordinator' }
+    proofPhotosUploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Coordinator' },
+    maxParticipants: { type: Number, default: null }, // Null means unlimited
+    waitlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Student' }],
+    feedback: [{
+        student: { type: mongoose.Schema.Types.ObjectId, ref: 'Student' },
+        rating: { type: Number, min: 1, max: 5 },
+        comment: { type: String },
+        createdAt: { type: Date, default: Date.now }
+    }],
+    averageRating: { type: Number, default: 0 },
+    feedbackEmailSent: { type: Boolean, default: false }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Event', eventSchema);

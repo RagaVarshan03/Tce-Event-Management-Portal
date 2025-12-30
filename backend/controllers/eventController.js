@@ -8,13 +8,14 @@ const fs = require('fs');
 // Create Event (Coordinator only)
 exports.createEvent = async (req, res) => {
     try {
-        const { eventName, description, date, venue, clubName } = req.body;
+        const { eventName, description, date, venue, clubName, maxParticipants } = req.body;
         const eventData = {
             eventName,
             description,
             date,
             venue,
-            organizer: req.user.id
+            organizer: req.user.id,
+            maxParticipants: maxParticipants ? parseInt(maxParticipants) : null
         };
 
         // Add clubName if provided
@@ -29,7 +30,21 @@ exports.createEvent = async (req, res) => {
 
         const event = await Event.create(eventData);
         res.status(201).json(event);
+
+        // Broadcast New Event Notification
+        try {
+            const io = require('../services/socketService').getIO();
+            io.emit('newNotification', {
+                type: 'NEW_EVENT',
+                message: `New event published: ${event.eventName}`,
+                eventId: event._id,
+                date: new Date()
+            });
+        } catch (err) {
+            console.error('[Socket] Error broadcasting new event:', err.message);
+        }
     } catch (error) {
+        console.error("Create Event Error:", error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -42,7 +57,6 @@ exports.getAllEvents = async (req, res) => {
         res.json(events);
     } catch (error) {
         console.error('Error fetching events:', error.message);
-        // Return empty array if database is not connected
         res.json([]);
     }
 };
@@ -56,36 +70,219 @@ exports.registerForEvent = async (req, res) => {
         const event = await Event.findById(eventId);
         if (!event) return res.status(404).json({ message: 'Event not found' });
 
+        // Check if already registered or in waitlist
         if (event.participants.includes(studentId)) {
             return res.status(400).json({ message: 'Already registered' });
         }
+        if (event.waitlist.includes(studentId)) {
+            return res.status(400).json({ message: 'Already on the waitlist' });
+        }
 
+        const student = await Student.findById(studentId);
+
+        // Check if full
+        if (event.maxParticipants && event.participants.length >= event.maxParticipants) {
+            // Join Waitlist
+            event.waitlist.push(studentId);
+            await event.save();
+
+            // Broadcast Waitlist Update
+            try {
+                const io = require('../services/socketService').getIO();
+                io.to(`event_${eventId}`).emit('seatUpdate', {
+                    eventId,
+                    participantsCount: event.participants.length,
+                    waitlistCount: event.waitlist.length
+                });
+            } catch (err) {
+                console.error('[Socket] Error broadcasting waitlist update:', err.message);
+            }
+
+            // Send Waitlist Email
+            if (student.email) {
+                sendEmail(emailTemplates.waitlistJoined(
+                    student.name,
+                    student.email,
+                    event.eventName
+                ));
+            }
+            return res.json({ message: 'Event is full. You have joined the waitlist.' });
+        }
+
+        // Register normally
         event.participants.push(studentId);
         await event.save();
 
-        const student = await Student.findById(studentId);
         student.registeredEvents.push(eventId);
         await student.save();
 
         res.json({ message: 'Registered successfully' });
 
+        // Broadcast Seat Update
+        try {
+            const io = require('../services/socketService').getIO();
+            io.to(`event_${eventId}`).emit('seatUpdate', {
+                eventId,
+                participantsCount: event.participants.length,
+                waitlistCount: event.waitlist.length
+            });
+            // Also notify dashboard
+            io.emit('dashboardUpdate', { type: 'REGISTRATION', eventId });
+        } catch (err) {
+            console.error('[Socket] Error broadcasting seat update:', err.message);
+        }
+
         // Send confirmation email
         if (student.email) {
-            const emailOptions = emailTemplates.registrationConfirmation(
+            sendEmail(emailTemplates.registrationConfirmation(
                 student.name,
                 student.email,
                 event.eventName,
                 event.date,
                 event.venue
-            );
-            sendEmail(emailOptions).then(result => {
-                if (result.success) {
-                    console.log(`Confirmation email sent to ${student.email}`);
-                } else {
-                    console.error(`Failed to send confirmation email to ${student.email}:`, result.error);
-                }
-            });
+            ));
         }
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+// Unregister / Cancel Registration
+exports.unregisterForEvent = async (req, res) => {
+    try {
+        const eventId = req.params.id;
+        const studentId = req.user.id;
+
+        const event = await Event.findById(eventId);
+        if (!event) return res.status(404).json({ message: 'Event not found' });
+
+        // Check if in participants
+        const participantIndex = event.participants.indexOf(studentId);
+        if (participantIndex === -1) {
+            // Check if in waitlist
+            const waitlistIndex = event.waitlist.indexOf(studentId);
+            if (waitlistIndex !== -1) {
+                event.waitlist.splice(waitlistIndex, 1);
+                await event.save();
+                return res.json({ message: 'Removed from waitlist' });
+            }
+            return res.status(400).json({ message: 'Not registered for this event' });
+        }
+
+        // Remove from participants
+        event.participants.splice(participantIndex, 1);
+
+        // Remove from student's registered events
+        await Student.findByIdAndUpdate(studentId, {
+            $pull: { registeredEvents: eventId }
+        });
+
+        // Promote from waitlist
+        let promotedStudentId = null;
+        if (event.waitlist.length > 0) {
+            promotedStudentId = event.waitlist.shift(); // Get first in line
+            event.participants.push(promotedStudentId);
+        }
+
+        await event.save();
+        res.json({ message: 'Unregistered successfully' });
+
+        // Send promotion email if someone was moved up
+        if (promotedStudentId) {
+            const promotedStudent = await Student.findById(promotedStudentId);
+            promotedStudent.registeredEvents.push(eventId);
+            await promotedStudent.save();
+
+            if (promotedStudent.email) {
+                sendEmail(emailTemplates.waitlistPromoted(
+                    promotedStudent.name,
+                    promotedStudent.email,
+                    event.eventName,
+                    event.date,
+                    event.venue
+                ));
+            }
+        }
+
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+// Submit Feedback
+exports.submitFeedback = async (req, res) => {
+    try {
+        const eventId = req.params.id;
+        const studentId = req.user.id;
+        const { rating, comment } = req.body;
+
+        const event = await Event.findById(eventId);
+        if (!event) return res.status(404).json({ message: 'Event not found' });
+
+        // Verify attendance (optional, but good practice)
+        // For simplicity, checking if registered
+        if (!event.participants.includes(studentId)) {
+            return res.status(403).json({ message: 'Only participants can submit feedback' });
+        }
+
+        // Check if already submitted
+        const existingFeedback = event.feedback.find(f => f.student.toString() === studentId);
+        if (existingFeedback) {
+            return res.status(400).json({ message: 'Feedback already submitted' });
+        }
+
+        // Add feedback
+        event.feedback.push({
+            student: studentId,
+            rating: parseInt(rating),
+            comment
+        });
+
+        // Recalculate average rating
+        const totalRating = event.feedback.reduce((sum, f) => sum + f.rating, 0);
+        event.averageRating = totalRating / event.feedback.length;
+
+        await event.save();
+        res.json({ message: 'Feedback submitted successfully' });
+
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+// Request Feedback (Coordinator Action)
+exports.requestFeedback = async (req, res) => {
+    try {
+        const eventId = req.params.id;
+        const event = await Event.findById(eventId).populate('participants');
+
+        if (!event) return res.status(404).json({ message: 'Event not found' });
+        if (event.organizer.toString() !== req.user.id) {
+            return res.status(403).json({ message: 'Not authorized' });
+        }
+
+        // Prevent spam
+        if (event.feedbackEmailSent) {
+            return res.status(400).json({ message: 'Feedback request already sent' });
+        }
+
+        // Send emails
+        event.participants.forEach(student => {
+            if (student.email) {
+                sendEmail(emailTemplates.feedbackRequest(
+                    student.name,
+                    student.email,
+                    event.eventName,
+                    event._id
+                ));
+            }
+        });
+
+        event.feedbackEmailSent = true;
+        await event.save();
+
+        res.json({ message: 'Feedback request emails sent' });
+
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -95,7 +292,14 @@ exports.registerForEvent = async (req, res) => {
 exports.getMyEvents = async (req, res) => {
     try {
         const student = await Student.findById(req.user.id).populate('registeredEvents');
-        res.json(student.registeredEvents);
+
+        // Find waitlisted events
+        const waitlistedEvents = await Event.find({ waitlist: req.user.id });
+
+        res.json({
+            registered: student.registeredEvents,
+            waitlisted: waitlistedEvents
+        });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -160,10 +364,10 @@ exports.notifyParticipants = async (req, res) => {
     }
 };
 
-// Update Event (Coordinator only - their own events)
+// Update Event (Coordinator only)
 exports.updateEvent = async (req, res) => {
     try {
-        const { eventName, description, date, venue, clubName } = req.body;
+        const { eventName, description, date, venue, clubName, maxParticipants } = req.body;
 
         // Find event and verify ownership
         const event = await Event.findById(req.params.id);
@@ -190,7 +394,8 @@ exports.updateEvent = async (req, res) => {
             eventName,
             description,
             date,
-            venue
+            venue,
+            maxParticipants: maxParticipants ? parseInt(maxParticipants) : null
         };
 
         // Add clubName if provided
@@ -203,7 +408,6 @@ exports.updateEvent = async (req, res) => {
             updateData.poster = req.file.filename;
         }
 
-        // Update event
         const updatedEvent = await Event.findByIdAndUpdate(
             req.params.id,
             updateData,
@@ -212,7 +416,6 @@ exports.updateEvent = async (req, res) => {
 
         // Notify participants if there are significant changes
         if (changes.length > 0 && event.participants && event.participants.length > 0) {
-            // Find all participants
             const Student = require('../models/Student');
             const participants = await Student.find({
                 _id: { $in: event.participants }
@@ -223,7 +426,7 @@ exports.updateEvent = async (req, res) => {
                 const emailOptions = emailTemplates.eventUpdate(
                     student.name,
                     student.email,
-                    eventName,
+                    event.eventName,
                     changes
                 );
                 return sendEmail(emailOptions);
@@ -304,9 +507,6 @@ exports.distributeCertificates = async (req, res) => {
             return res.status(403).json({ message: 'Not authorized to distribute certificates for this event' });
         }
 
-        // Filter participants who attended
-        // For now, sending to all registered participants
-
         const participants = event.participants;
         if (participants.length === 0) {
             return res.status(400).json({ message: 'No participants registered for this event.' });
@@ -314,11 +514,9 @@ exports.distributeCertificates = async (req, res) => {
 
         let sentCount = 0;
 
-        // Process sequentially
         for (const student of participants) {
             if (student.email) {
                 try {
-                    // Generate PDF
                     const pdfBuffer = await generateCertificate(
                         student.name,
                         event.eventName,
@@ -327,21 +525,18 @@ exports.distributeCertificates = async (req, res) => {
                         event.clubName
                     );
 
-                    // Prepare Email with Attachment
                     const emailOptions = emailTemplates.certificateDistribution(
                         student.name,
                         student.email,
                         event.eventName
                     );
 
-                    // Add Attachment
                     emailOptions.attachments = [{
                         filename: `Certificate_${event.eventName.replace(/\s+/g, '_')}.pdf`,
                         content: pdfBuffer,
                         contentType: 'application/pdf'
                     }];
 
-                    // Send Email
                     const result = await sendEmail(emailOptions);
                     if (result.success) sentCount++;
 
@@ -401,12 +596,10 @@ exports.uploadProofPhotos = async (req, res) => {
             return res.status(404).json({ message: 'Event not found' });
         }
 
-        // Verify the coordinator owns this event
         if (event.organizer.toString() !== req.user.id) {
             return res.status(403).json({ message: 'Not authorized to upload photos for this event' });
         }
 
-        // Check if event is in the past
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const eventDate = new Date(event.date);
@@ -416,14 +609,12 @@ exports.uploadProofPhotos = async (req, res) => {
             return res.status(400).json({ message: 'Can only upload proof photos for past events' });
         }
 
-        // Check if files were uploaded
         if (!req.files || req.files.length === 0) {
             return res.status(400).json({ message: 'No files uploaded' });
         }
 
         const replaceAll = req.body.replaceAll === 'true';
 
-        // If replace all, delete old photos
         if (replaceAll && event.proofPhotos && event.proofPhotos.length > 0) {
             event.proofPhotos.forEach(filename => {
                 const oldFilePath = path.join(__dirname, '../uploads/proof-photos', filename);
@@ -434,14 +625,11 @@ exports.uploadProofPhotos = async (req, res) => {
             event.proofPhotos = [];
         }
 
-        // Add new photos
         const newPhotos = req.files.map(file => file.filename);
         const currentPhotos = event.proofPhotos || [];
         const totalPhotos = currentPhotos.concat(newPhotos);
 
-        // Check if total exceeds 5
         if (totalPhotos.length > 5) {
-            // Delete uploaded files
             req.files.forEach(file => {
                 const filePath = path.join(__dirname, '../uploads/proof-photos', file.filename);
                 if (fs.existsSync(filePath)) {
@@ -451,7 +639,6 @@ exports.uploadProofPhotos = async (req, res) => {
             return res.status(400).json({ message: 'Cannot upload more than 5 photos total' });
         }
 
-        // Update event with new photos
         event.proofPhotos = totalPhotos;
         event.proofPhotosUploadedAt = new Date();
         event.proofPhotosUploadedBy = req.user.id;
@@ -483,19 +670,15 @@ exports.downloadProofPhotos = async (req, res) => {
             return res.status(404).json({ message: 'No proof photos uploaded for this event' });
         }
 
-        // Set response headers for ZIP download
         res.setHeader('Content-Type', 'application/zip');
         res.setHeader('Content-Disposition', `attachment; filename="${event.eventName}_proof_photos.zip"`);
 
-        // Create ZIP archive
         const archive = archiver('zip', {
-            zlib: { level: 9 } // Compression level
+            zlib: { level: 9 }
         });
 
-        // Pipe archive to response
         archive.pipe(res);
 
-        // Add each photo to the archive
         event.proofPhotos.forEach((filename, index) => {
             const filePath = path.join(__dirname, '../uploads/proof-photos', filename);
             if (fs.existsSync(filePath)) {
@@ -503,7 +686,6 @@ exports.downloadProofPhotos = async (req, res) => {
             }
         });
 
-        // Finalize the archive
         archive.finalize();
 
     } catch (error) {
@@ -523,23 +705,19 @@ exports.deleteProofPhoto = async (req, res) => {
             return res.status(404).json({ message: 'Event not found' });
         }
 
-        // Verify the coordinator owns this event
         if (event.organizer.toString() !== req.user.id) {
             return res.status(403).json({ message: 'Not authorized to delete photos for this event' });
         }
 
-        // Check if photo exists in event
         if (!event.proofPhotos || !event.proofPhotos.includes(filename)) {
             return res.status(404).json({ message: 'Photo not found in event' });
         }
 
-        // Delete file from filesystem
         const filePath = path.join(__dirname, '../uploads/proof-photos', filename);
         if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath);
         }
 
-        // Remove from event
         event.proofPhotos = event.proofPhotos.filter(photo => photo !== filename);
         await event.save();
 

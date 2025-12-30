@@ -1,0 +1,114 @@
+.notification-center {
+    position: relative;
+    display: inline-block;
+}
+
+.notif-bell {
+    background: none;
+    border: none;
+    color: #830000;
+    cursor: pointer;
+    position: relative;
+    padding: 8px;
+    border-radius: 50%;
+    transition: background 0.3s;
+}
+
+.notif-bell:hover {
+    background: rgba(131, 0, 0, 0.1);
+}
+
+.notif-badge {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: #ffc107;
+    color: black;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 50%;
+    min-width: 18px;
+    text-align: center;
+}
+
+.notif-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    width: 300px;
+    background: white;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    border-radius: 12px;
+    margin-top: 10px;
+    z-index: 1000;
+    overflow: hidden;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.notif-header {
+    padding: 12px 16px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.notif-header h4 {
+    margin: 0;
+    color: #333;
+}
+
+.notif-header button {
+    background: none;
+    border: none;
+    color: #830000;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.notif-body {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.notif-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background 0.3s;
+}
+
+.notif-item:hover {
+    background: #fafafa;
+}
+
+.notif-msg {
+    font-size: 14px;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.notif-time {
+    font-size: 11px;
+    color: #999;
+}
+
+.no-notif {
+    padding: 20px;
+    text-align: center;
+    color: #999;
+    font-size: 14px;
+}

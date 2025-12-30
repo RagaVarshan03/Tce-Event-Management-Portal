@@ -398,6 +398,25 @@ exports.getMonthlyAnalytics = async (req, res) => {
             checkedIn: true
         });
 
+        const totalAttendance = attendanceRecords.length;
+        const attendanceRate = totalRegistrations > 0
+            ? Math.round((totalAttendance / totalRegistrations) * 100)
+            : 0;
+
+        // Department-wise breakdown
+        const departmentCounts = {};
+        events.forEach(event => {
+            if (event.organizer && event.organizer.department) {
+                const dept = event.organizer.department;
+                departmentCounts[dept] = (departmentCounts[dept] || 0) + 1;
+            }
+        });
+
+        const departmentData = Object.keys(departmentCounts).map(dept => ({
+            name: dept,
+            count: departmentCounts[dept]
+        }));
+
         res.json({
             period: {
                 month: month || 'All',
@@ -411,7 +430,8 @@ exports.getMonthlyAnalytics = async (req, res) => {
                 pendingEvents,
                 rejectedEvents,
                 totalRegistrations,
-                totalAttendance: attendanceRecords.length
+                totalAttendance,
+                attendanceRate
             },
             events: events.map(e => ({
                 _id: e._id,
@@ -420,7 +440,8 @@ exports.getMonthlyAnalytics = async (req, res) => {
                 status: e.status,
                 organizer: e.organizer,
                 registrations: e.participants.length
-            }))
+            })),
+            departmentData
         });
     } catch (error) {
         res.status(500).json({ error: error.message });

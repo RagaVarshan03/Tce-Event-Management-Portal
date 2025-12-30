@@ -409,6 +409,29 @@
     box-shadow: 0 4px 12px rgba(131, 0, 0, 0.3);
 }
 
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.time-inputs {
+    display: flex;
+    gap: 10px;
+}
+
+.time-inputs select {
+    flex: 1;
+    min-width: 0;
+}
+
+@media (max-width: 768px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+}
+
 /* List Styles */
 .list-group {
     list-style: none;
@@ -475,7 +498,7 @@ table td {
 }
 
 table th {
-    background-color: #830000;
+    background-color: #343a40;
     color: white;
     font-weight: 600;
 }

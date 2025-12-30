@@ -1,14 +1,18 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { Calendar, Clock, MapPin, Users, Upload, Type, Image } from 'lucide-react';
 import API from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useSocket } from '../context/SocketContext';
 import AttendanceUploadModal from './AttendanceUploadModal';
 import ProofPhotosUploadModal from './ProofPhotosUploadModal';
 import EditEventModal from './EditEventModal';
+import ViewFeedbackModal from './ViewFeedbackModal';
 import '../pages/Dashboard.css';
 
 const CoordinatorHome = () => {
     const { user } = useContext(AuthContext);
+    const { socket } = useSocket();
     const navigate = useNavigate();
     const [events, setEvents] = useState([]);
     const [newEvent, setNewEvent] = useState({
@@ -27,11 +31,23 @@ const CoordinatorHome = () => {
     const [showAttendanceModal, setShowAttendanceModal] = useState(false);
     const [showProofPhotosModal, setShowProofPhotosModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
+    const [showViewFeedbackModal, setShowViewFeedbackModal] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState(null);
 
     useEffect(() => {
         fetchEvents();
     }, []);
+
+    useEffect(() => {
+        if (!socket) return;
+
+        socket.on('dashboardUpdate', (data) => {
+            console.log('[Socket] Dashboard update received:', data);
+            fetchEvents();
+        });
+
+        return () => socket.off('dashboardUpdate');
+    }, [socket]);
 
     const fetchEvents = async () => {
         try {
@@ -76,6 +92,9 @@ const CoordinatorHome = () => {
             }
             if (posterFile) {
                 formData.append('poster', posterFile);
+            }
+            if (newEvent.maxParticipants) {
+                formData.append('maxParticipants', newEvent.maxParticipants);
             }
 
             await API.post('/events/create', formData, {
@@ -156,6 +175,18 @@ const CoordinatorHome = () => {
         }
     };
 
+    const handleRequestFeedback = async (event) => {
+        if (!window.confirm(`Request feedback from all participants for "${event.eventName}"?`)) return;
+        try {
+            const res = await API.post(`/events/${event._id}/request-feedback`);
+            alert(res.data.message);
+            fetchEvents();
+        } catch (err) {
+            console.error('Error requesting feedback:', err);
+            alert(err.response?.data?.message || 'Failed to request feedback');
+        }
+    };
+
     const handleUploadSuccess = () => {
         fetchEvents();
     };
@@ -170,68 +201,108 @@ const CoordinatorHome = () => {
                     </p>
                     <form onSubmit={handleSubmit}>
                         <div className="form-group">
-                            <label>Event Name</label>
+                            <label>
+                                <Type size={16} style={{ verticalAlign: 'middle', marginRight: '8px', color: '#830000' }} />
+                                Event Name
+                            </label>
                             <input type="text" name="eventName" value={newEvent.eventName} onChange={handleChange} required />
                         </div>
                         <div className="form-group">
-                            <label>Description</label>
+                            <label>
+                                <Type size={16} style={{ verticalAlign: 'middle', marginRight: '8px', color: '#830000' }} />
+                                Description
+                            </label>
                             <textarea name="description" value={newEvent.description} onChange={handleChange} required />
                         </div>
-                        <div className="form-group">
-                            <label>Date</label>
-                            <input type="date" name="date" value={newEvent.date} onChange={handleChange} required />
+
+                        <div className="form-grid">
+                            <div className="form-group">
+                                <label>
+                                    <Calendar size={16} style={{ verticalAlign: 'middle', marginRight: '8px', color: '#830000' }} />
+                                    Date
+                                </label>
+                                <input type="date" name="date" value={newEvent.date} onChange={handleChange} required />
+                            </div>
+                            <div className="form-group">
+                                <label>
+                                    <Clock size={16} style={{ verticalAlign: 'middle', marginRight: '8px', color: '#830000' }} />
+                                    Time
+                                </label>
+                                <div className="time-inputs">
+                                    <select
+                                        name="hour"
+                                        value={timeData.hour}
+                                        onChange={handleTimeChange}
+                                    >
+                                        {Array.from({ length: 12 }, (_, i) => i + 1).map(h => (
+                                            <option key={h} value={h}>{h}</option>
+                                        ))}
+                                    </select>
+                                    <select
+                                        name="minute"
+                                        value={timeData.minute}
+                                        onChange={handleTimeChange}
+                                    >
+                                        {Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0')).map(m => (
+                                            <option key={m} value={m}>{m}</option>
+                                        ))}
+                                    </select>
+                                    <select
+                                        name="period"
+                                        value={timeData.period}
+                                        onChange={handleTimeChange}
+                                    >
+                                        <option value="AM">AM</option>
+                                        <option value="PM">PM</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
-                        <div className="form-group">
-                            <label>Time</label>
-                            <div style={{ display: 'flex', gap: '10px' }}>
-                                <select
-                                    name="hour"
-                                    value={timeData.hour}
-                                    onChange={handleTimeChange}
-                                    style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
-                                >
-                                    {Array.from({ length: 12 }, (_, i) => i + 1).map(h => (
-                                        <option key={h} value={h}>{h}</option>
-                                    ))}
-                                </select>
-                                <select
-                                    name="minute"
-                                    value={timeData.minute}
-                                    onChange={handleTimeChange}
-                                    style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
-                                >
-                                    {Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0')).map(m => (
-                                        <option key={m} value={m}>{m}</option>
-                                    ))}
-                                </select>
-                                <select
-                                    name="period"
-                                    value={timeData.period}
-                                    onChange={handleTimeChange}
-                                    style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
-                                >
-                                    <option value="AM">AM</option>
-                                    <option value="PM">PM</option>
+
+                        <div className="form-grid">
+                            <div className="form-group">
+                                <label>
+                                    <MapPin size={16} style={{ verticalAlign: 'middle', marginRight: '8px', color: '#830000' }} />
+                                    Venue
+                                </label>
+                                <input type="text" name="venue" value={newEvent.venue} onChange={handleChange} required />
+                            </div>
+                            <div className="form-group">
+                                <label>
+                                    <Users size={16} style={{ verticalAlign: 'middle', marginRight: '8px', color: '#830000' }} />
+                                    Club Name
+                                </label>
+                                <select name="clubName" value={newEvent.clubName} onChange={handleChange}>
+                                    <option value="">Select a club</option>
+                                    <option value="IEEE CIS">IEEE CIS</option>
+                                    <option value="TECH EXPLORERS">TECH EXPLORERS</option>
+                                    <option value="CSBSA">CSBSA</option>
+                                    <option value="ASI">ASI</option>
+                                    <option value="CODERS CLUB">CODERS CLUB</option>
                                 </select>
                             </div>
                         </div>
+
                         <div className="form-group">
-                            <label>Venue</label>
-                            <input type="text" name="venue" value={newEvent.venue} onChange={handleChange} required />
+                            <label>
+                                <Users size={16} style={{ verticalAlign: 'middle', marginRight: '8px', color: '#830000' }} />
+                                Max Participants
+                            </label>
+                            <input
+                                type="number"
+                                name="maxParticipants"
+                                value={newEvent.maxParticipants || ''}
+                                onChange={handleChange}
+                                placeholder="Leave empty for unlimited"
+                                min="1"
+                            />
                         </div>
+
                         <div className="form-group">
-                            <label>Club Name</label>
-                            <select name="clubName" value={newEvent.clubName} onChange={handleChange}>
-                                <option value="">Select a club</option>
-                                <option value="IEEE CIS">IEEE CIS</option>
-                                <option value="TECH EXPLORERS">TECH EXPLORERS</option>
-                                <option value="CSBSA">CSBSA</option>
-                                <option value="ASI">ASI</option>
-                                <option value="CODERS CLUB">CODERS CLUB</option>
-                            </select>
-                        </div>
-                        <div className="form-group">
-                            <label>Event Poster</label>
+                            <label>
+                                <Image size={16} style={{ verticalAlign: 'middle', marginRight: '8px', color: '#830000' }} />
+                                Event Poster
+                            </label>
                             <input
                                 type="file"
                                 accept="image/*"
@@ -294,27 +365,66 @@ const CoordinatorHome = () => {
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end' }}>
                                         {event.status === 'approved' && (
-                                            <span className="badge">{event.participants?.length || 0} Participants</span>
+                                            <span className="badge">
+                                                {event.participants?.length || 0}
+                                                {event.maxParticipants ? ` / ${event.maxParticipants}` : ''} Participants
+                                            </span>
                                         )}
                                         {event.status === 'approved' && isEventPast(event.date) && (
-                                            <button
-                                                onClick={() => handleUploadAttendance(event)}
-                                                style={{
-                                                    padding: '8px 16px',
-                                                    background: 'linear-gradient(135deg, #830000 0%, #a00000 100%)',
-                                                    color: 'white',
-                                                    border: 'none',
-                                                    borderRadius: '6px',
-                                                    cursor: 'pointer',
-                                                    fontSize: '13px',
-                                                    fontWeight: '600',
-                                                    transition: 'all 0.3s ease'
-                                                }}
-                                                onMouseOver={(e) => e.target.style.transform = 'translateY(-2px)'}
-                                                onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
-                                            >
-                                                {event.attendanceSheet ? '📝 Update Attendance' : '📤 Upload Attendance'}
-                                            </button>
+                                            <>
+                                                <button
+                                                    onClick={() => handleRequestFeedback(event)}
+                                                    disabled={event.feedbackEmailSent}
+                                                    style={{
+                                                        padding: '8px 16px',
+                                                        background: event.feedbackEmailSent ? '#6c757d' : 'linear-gradient(135deg, #17a2b8 0%, #117a8b 100%)',
+                                                        color: 'white',
+                                                        border: 'none',
+                                                        borderRadius: '6px',
+                                                        cursor: event.feedbackEmailSent ? 'not-allowed' : 'pointer',
+                                                        fontSize: '13px',
+                                                        fontWeight: '600',
+                                                        transition: 'all 0.3s ease'
+                                                    }}
+                                                >
+                                                    {event.feedbackEmailSent ? '✓ Feedback Requested' : '📢 Request Feedback'}
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedEvent(event);
+                                                        setShowViewFeedbackModal(true);
+                                                    }}
+                                                    style={{
+                                                        padding: '8px 16px',
+                                                        background: 'linear-gradient(135deg, #6610f2 0%, #520dc2 100%)',
+                                                        color: 'white',
+                                                        border: 'none',
+                                                        borderRadius: '6px',
+                                                        cursor: 'pointer',
+                                                        fontSize: '13px',
+                                                        fontWeight: '600',
+                                                        transition: 'all 0.3s ease'
+                                                    }}
+                                                >
+                                                    💬 View Feedback ({event.feedback?.length || 0})
+                                                </button>
+                                                <button
+                                                    onClick={() => handleUploadAttendance(event)}
+                                                    style={{
+                                                        padding: '8px 16px',
+                                                        background: 'linear-gradient(135deg, #830000 0%, #a00000 100%)',
+                                                        color: 'white',
+                                                        border: 'none',
+                                                        borderRadius: '6px',
+                                                        cursor: 'pointer',
+                                                        fontSize: '13px',
+                                                        fontWeight: '600',
+                                                        transition: 'all 0.3s ease'
+                                                    }}
+                                                >
+                                                    {event.attendanceSheet ? '📝 Update Attendance' : '📤 Upload Attendance'}
+                                                </button>
+                                            </>
                                         )}
                                         {event.status === 'approved' && isEventPast(event.date) && (
                                             <button
@@ -330,8 +440,6 @@ const CoordinatorHome = () => {
                                                     fontWeight: '600',
                                                     transition: 'all 0.3s ease'
                                                 }}
-                                                onMouseOver={(e) => e.target.style.transform = 'translateY(-2px)'}
-                                                onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
                                             >
                                                 {event.proofPhotos?.length > 0
                                                     ? `📸 Manage Photos (${event.proofPhotos.length}/5)`
@@ -352,8 +460,6 @@ const CoordinatorHome = () => {
                                                     fontWeight: '600',
                                                     transition: 'all 0.3s ease'
                                                 }}
-                                                onMouseOver={(e) => e.target.style.transform = 'translateY(-2px)'}
-                                                onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
                                             >
                                                 🎓 Distribute Certificates
                                             </button>
@@ -372,8 +478,6 @@ const CoordinatorHome = () => {
                                                     fontWeight: '600',
                                                     transition: 'all 0.3s ease'
                                                 }}
-                                                onMouseOver={(e) => e.target.style.transform = 'translateY(-2px)'}
-                                                onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
                                             >
                                                 ✏️ Edit
                                             </button>
@@ -416,6 +520,16 @@ const CoordinatorHome = () => {
                         setSelectedEvent(null);
                     }}
                     onUpdateSuccess={fetchEvents}
+                />
+            )}
+
+            {showViewFeedbackModal && selectedEvent && (
+                <ViewFeedbackModal
+                    event={selectedEvent}
+                    onClose={() => {
+                        setShowViewFeedbackModal(false);
+                        setSelectedEvent(null);
+                    }}
                 />
             )}
         </div>

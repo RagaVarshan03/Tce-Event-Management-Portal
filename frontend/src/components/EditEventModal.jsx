@@ -14,7 +14,8 @@ const EditEventModal = ({ event, onClose, onUpdateSuccess }) => {
         description: event.description,
         date: event.date.split('T')[0], // Format date for input
         venue: event.venue,
-        clubName: event.clubName || ''
+        clubName: event.clubName || '',
+        maxParticipants: event.maxParticipants || ''
     });
 
     const [timeData, setTimeData] = useState({
@@ -64,6 +65,9 @@ const EditEventModal = ({ event, onClose, onUpdateSuccess }) => {
             }
             if (posterFile) {
                 data.append('poster', posterFile);
+            }
+            if (formData.maxParticipants) {
+                data.append('maxParticipants', formData.maxParticipants);
             }
 
             await API.put(`/events/${event._id}`, data, {
@@ -181,6 +185,18 @@ const EditEventModal = ({ event, onClose, onUpdateSuccess }) => {
                             <option value="ASI">ASI</option>
                             <option value="CODERS CLUB">CODERS CLUB</option>
                         </select>
+                    </div>
+
+                    <div className="form-group">
+                        <label>Max Participants</label>
+                        <input
+                            type="number"
+                            name="maxParticipants"
+                            value={formData.maxParticipants || ''}
+                            onChange={handleChange}
+                            placeholder="Leave empty for unlimited"
+                            min="1"
+                        />
                     </div>
 
                     <div className="form-group">

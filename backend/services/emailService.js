@@ -297,6 +297,83 @@ const emailTemplates = {
                 </div>
             </div>
         `
+    }),
+
+    waitlistJoined: (studentName, studentEmail, eventName) => ({
+        from: '"TCE Event Management Portal" <raga@student.tce.edu>',
+        to: studentEmail,
+        subject: `Waitlist Confirmed: ${eventName}`,
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: #ffc107; color: black; padding: 20px; text-align: center;">
+                    <h2>You are on the Waitlist</h2>
+                </div>
+                <div style="padding: 20px; background: #f9f9f9;">
+                    <p>Dear ${studentName},</p>
+                    <p>The event <strong>${eventName}</strong> is currently full.</p>
+                    <p>You have been added to the <strong>Waitlist</strong>. If a spot opens up, you will be automatically registered and notified via email.</p>
+                    <hr style="margin: 20px 0;">
+                    <div style="background: white; padding: 15px; border-left: 4px solid #830000;">
+                        <h3 style="margin-top: 0;">Contact Information</h3>
+                        <p><strong>Thiagarajar College of Engineering</strong></p>
+                    </div>
+                </div>
+            </div>
+        `
+    }),
+
+    waitlistPromoted: (studentName, studentEmail, eventName, date, venue) => ({
+        from: '"TCE Event Management Portal" <raga@student.tce.edu>',
+        to: studentEmail,
+        subject: `Spot Confirmed! You are registered for ${eventName}`,
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: #28a745; color: white; padding: 20px; text-align: center;">
+                    <h2>Spot Confirmed!</h2>
+                </div>
+                <div style="padding: 20px; background: #f9f9f9;">
+                    <p>Dear ${studentName},</p>
+                    <p>Good news! A spot has opened up for <strong>${eventName}</strong>.</p>
+                    <p>You have been moved from the waitlist to the <strong>Confirmed Registration</strong> list.</p>
+                    <p><strong>Date:</strong> ${new Date(date).toLocaleDateString()}</p>
+                    <p><strong>Venue:</strong> ${venue}</p>
+                    <hr style="margin: 20px 0;">
+                    <div style="background: white; padding: 15px; border-left: 4px solid #830000;">
+                        <h3 style="margin-top: 0;">Contact Information</h3>
+                        <p><strong>Thiagarajar College of Engineering</strong></p>
+                    </div>
+                </div>
+            </div>
+        `
+    }),
+
+    feedbackRequest: (studentName, studentEmail, eventName, eventId) => ({
+        from: '"TCE Event Management Portal" <raga@student.tce.edu>',
+        to: studentEmail,
+        subject: `How was ${eventName}?`,
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: #17a2b8; color: white; padding: 20px; text-align: center;">
+                    <h2>We'd love your feedback!</h2>
+                </div>
+                <div style="padding: 20px; background: #f9f9f9;">
+                    <p>Dear ${studentName},</p>
+                    <p>Thank you for attending <strong>${eventName}</strong>.</p>
+                    <p>We would appreciate if you could take a moment to rate the event.</p>
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/student-dashboard" 
+                           style="background: #830000; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
+                            Rate Event
+                        </a>
+                    </div>
+                    <hr style="margin: 20px 0;">
+                    <div style="background: white; padding: 15px; border-left: 4px solid #830000;">
+                        <h3 style="margin-top: 0;">Contact Information</h3>
+                        <p><strong>Thiagarajar College of Engineering</strong></p>
+                    </div>
+                </div>
+            </div>
+        `
     })
 };
 

@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import { Download, Image, Trash2, Plus } from 'lucide-react';
+import {
+    PieChart, Pie, Cell,
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+} from 'recharts';
 import API from '../services/api';
+import { useSocket } from '../context/SocketContext';
 import '../pages/AdminDashboard.css';
 import '../styles/RejectionModal.css';
 
 const AdminHome = () => {
+    const { socket } = useSocket();
     const [activeTab, setActiveTab] = useState('add-coordinators');
     const [allowedCoordinators, setAllowedCoordinators] = useState([]);
     const [pendingEvents, setPendingEvents] = useState([]);
@@ -18,6 +25,17 @@ const AdminHome = () => {
     useEffect(() => {
         loadData();
     }, [activeTab]);
+
+    useEffect(() => {
+        if (!socket) return;
+
+        socket.on('dashboardUpdate', (data) => {
+            console.log('[Socket] Admin Dashboard update received:', data);
+            loadData();
+        });
+
+        return () => socket.off('dashboardUpdate');
+    }, [socket, activeTab]);
 
     const loadData = async () => {
         setLoading(true);
@@ -222,32 +240,20 @@ const AddCoordinators = ({ coordinators, onAdd, onRemove }) => {
         <div className="approval-section">
             <h2>Manage Coordinators</h2>
 
-            <form onSubmit={handleSubmit} style={{ marginBottom: '30px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <form onSubmit={handleSubmit} className="coordinator-form">
                 <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Enter coordinator email"
                     required
-                    style={{
-                        padding: '10px',
-                        borderRadius: '6px',
-                        border: '1px solid #ddd',
-                        flex: '1',
-                        minWidth: '250px'
-                    }}
+                    className="coordinator-input"
                 />
                 <select
                     value={department}
                     onChange={(e) => setDepartment(e.target.value)}
                     required
-                    style={{
-                        padding: '10px',
-                        borderRadius: '6px',
-                        border: '1px solid #ddd',
-                        flex: '1',
-                        minWidth: '200px'
-                    }}
+                    className="coordinator-select"
                 >
                     <option value="">Select Department</option>
                     <option value="CSE">CSE</option>
@@ -260,16 +266,9 @@ const AddCoordinators = ({ coordinators, onAdd, onRemove }) => {
                 </select>
                 <button
                     type="submit"
-                    style={{
-                        padding: '10px 20px',
-                        background: '#830000',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        fontWeight: 'bold'
-                    }}
+                    className="btn-add"
                 >
+                    <Plus size={18} />
                     Add Coordinator
                 </button>
             </form>
@@ -296,10 +295,11 @@ const AddCoordinators = ({ coordinators, onAdd, onRemove }) => {
                                     <td>{new Date(coord.createdAt).toLocaleDateString()}</td>
                                     <td>
                                         <button
-                                            className="btn-danger"
+                                            className="icon-btn btn-delete"
+                                            title="Remove Coordinator"
                                             onClick={() => onRemove(coord._id)}
                                         >
-                                            Remove
+                                            <Trash2 size={18} />
                                         </button>
                                     </td>
                                 </tr>
@@ -371,7 +371,8 @@ const AllEvents = ({ events, onDelete, onViewAttendance }) => (
                             <td className="action-buttons">
                                 {event.attendanceSheet && (
                                     <button
-                                        className="btn-success"
+                                        className="icon-btn btn-download"
+                                        title="Download Attendance"
                                         onClick={async () => {
                                             try {
                                                 const response = await API.get(`/events/${event._id}/download-attendance`, {
@@ -388,17 +389,14 @@ const AllEvents = ({ events, onDelete, onViewAttendance }) => (
                                                 alert('Failed to download attendance sheet');
                                             }
                                         }}
-                                        style={{
-                                            background: 'linear-gradient(135deg, #28a745 0%, #34ce57 100%)',
-                                            color: 'white'
-                                        }}
                                     >
-                                        📥 Download Attendance
+                                        <Download size={18} />
                                     </button>
                                 )}
                                 {event.proofPhotos && event.proofPhotos.length > 0 && (
                                     <button
-                                        className="btn-success"
+                                        className="icon-btn btn-photos"
+                                        title={`Download Photos (${event.proofPhotos.length})`}
                                         onClick={async () => {
                                             try {
                                                 const response = await API.get(`/events/${event._id}/download-proof-photos`, {
@@ -415,19 +413,16 @@ const AllEvents = ({ events, onDelete, onViewAttendance }) => (
                                                 alert('Failed to download proof photos');
                                             }
                                         }}
-                                        style={{
-                                            background: 'linear-gradient(135deg, #17a2b8 0%, #20c9e0 100%)',
-                                            color: 'white'
-                                        }}
                                     >
-                                        📷 Download Photos ({event.proofPhotos.length})
+                                        <Image size={18} />
                                     </button>
                                 )}
                                 <button
-                                    className="btn-danger"
+                                    className="icon-btn btn-delete"
+                                    title="Delete Event"
                                     onClick={() => onDelete(event._id)}
                                 >
-                                    Delete
+                                    <Trash2 size={18} />
                                 </button>
                             </td>
                         </tr>
@@ -438,25 +433,87 @@ const AllEvents = ({ events, onDelete, onViewAttendance }) => (
     </div>
 );
 
-const Analytics = ({ data }) => (
-    <div className="analytics-section">
-        <h2>Monthly Analytics</h2>
-        <div className="analytics-grid">
-            <div className="stat-card">
-                <h3>{data.summary.totalEvents}</h3>
-                <p>Total Events</p>
+const Analytics = ({ data }) => {
+    // Prepare data for Pie Chart
+    const statusData = [
+        { name: 'Approved', value: data.summary.approvedEvents, color: '#28a745' },
+        { name: 'Pending', value: data.summary.pendingEvents, color: '#ffc107' },
+        { name: 'Rejected', value: data.summary.rejectedEvents, color: '#dc3545' }
+    ].filter(item => item.value > 0);
+
+    // Prepare data for Bar Chart (Top 5 Events by Registration)
+    const eventData = [...data.events]
+        .sort((a, b) => b.registrations - a.registrations)
+        .slice(0, 5)
+        .map(event => ({
+            name: event.eventName.length > 15 ? event.eventName.substring(0, 15) + '...' : event.eventName,
+            registrations: event.registrations
+        }));
+
+    return (
+        <div className="analytics-section">
+            <h2>Monthly Analytics</h2>
+            <div className="analytics-grid">
+                <div className="stat-card">
+                    <h3>{data.summary.totalEvents}</h3>
+                    <p>Total Events</p>
+                </div>
+                <div className="stat-card">
+                    <h3>{data.summary.approvedEvents}</h3>
+                    <p>Approved Events</p>
+                </div>
+                <div className="stat-card">
+                    <h3>{data.summary.pendingEvents}</h3>
+                    <p>Pending Events</p>
+                </div>
             </div>
-            <div className="stat-card">
-                <h3>{data.summary.approvedEvents}</h3>
-                <p>Approved Events</p>
-            </div>
-            <div className="stat-card">
-                <h3>{data.summary.pendingEvents}</h3>
-                <p>Pending Events</p>
+
+            <div className="analytics-charts-container">
+                <div className="chart-wrapper">
+                    <h3>Event Status Distribution</h3>
+                    {statusData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={300}>
+                            <PieChart>
+                                <Pie
+                                    data={statusData}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={60}
+                                    outerRadius={100}
+                                    paddingAngle={5}
+                                    dataKey="value"
+                                >
+                                    {statusData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                                    ))}
+                                </Pie>
+                                <Tooltip />
+                                <Legend
+                                    formatter={(value, entry) => {
+                                        const { payload } = entry;
+                                        return `${value} : ${payload.value}`;
+                                    }}
+                                />
+                                <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle">
+                                    <tspan x="50%" dy="-0.5em" fontSize="24" fontWeight="bold" fill="#333">
+                                        {data.summary.totalEvents}
+                                    </tspan>
+                                    <tspan x="50%" dy="1.5em" fontSize="14" fill="#666">
+                                        Total
+                                    </tspan>
+                                </text>
+                            </PieChart>
+                        </ResponsiveContainer>
+                    ) : (
+                        <p className="no-data-text">No event data available</p>
+                    )}
+                </div>
+
+
             </div>
         </div>
-    </div>
-);
+    );
+};
 
 const AttendanceModal = ({ data, onClose }) => {
     const attendancePercentage = data.totalRegistered > 0

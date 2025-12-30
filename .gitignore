@@ -1,0 +1,11 @@
+node_modules/
+.env
+dist/
+build/
+.vs/
+*.txt
+*.log
+.DS_Store
+auth_config.json
+temp/
+tmp/

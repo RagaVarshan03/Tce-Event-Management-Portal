@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import API from '../services/api';
 import './Auth.css';
-
 import { motion } from 'framer-motion';
+import { useGoogleLogin } from '@react-oauth/google';
 
 const Signup = () => {
+    const navigate = useNavigate();
+    const location = useLocation();
     const [role, setRole] = useState('student');
     const [formData, setFormData] = useState({
         name: '',
@@ -15,8 +17,15 @@ const Signup = () => {
         department: '',
         year: '1st'
     });
-    const navigate = useNavigate();
     const [error, setError] = useState('');
+
+    useEffect(() => {
+        if (location.state?.googleUser) {
+            const { name, email, role: googleRole } = location.state.googleUser;
+            setFormData(prev => ({ ...prev, name, email }));
+            setRole(googleRole);
+        }
+    }, [location.state]);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -37,6 +46,29 @@ const Signup = () => {
             setError(err.response?.data?.message || err.response?.data?.error || err.message || 'Registration failed. Please check your details.');
         }
     };
+
+    const handleGoogleSignup = useGoogleLogin({
+        onSuccess: async (tokenResponse) => {
+            try {
+                const res = await API.post('/auth/google', {
+                    accessToken: tokenResponse.access_token,
+                    role: role
+                });
+
+                if (res.data.isNewUser) {
+                    const { name, email } = res.data.user;
+                    setFormData(prev => ({ ...prev, name, email }));
+                    alert('Google details retrieved! Please fill in the remaining fields.');
+                } else {
+                    alert('Account already exists. Logging you in...');
+                    navigate('/login');
+                }
+            } catch (err) {
+                setError(err.response?.data?.message || 'Google signup failed.');
+            }
+        },
+        onError: () => setError('Google Signup Failed')
+    });
 
     return (
         <div className="auth-container">
@@ -65,23 +97,38 @@ const Signup = () => {
                             <option value="admin">Admin</option>
                         </select>
                     </div>
+
+                    {(role === 'student' || role === 'coordinator') && (
+                        <>
+                            <button
+                                type="button"
+                                className="google-auth-btn"
+                                onClick={() => handleGoogleSignup()}
+                            >
+                                <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" alt="Google" className="google-auth-icon" />
+                                Signup with Google
+                            </button>
+                            <div className="auth-divider">or signup with details</div>
+                        </>
+                    )}
+
                     <div className="form-group">
                         <label>Name</label>
-                        <input type="text" name="name" onChange={handleChange} required />
+                        <input type="text" name="name" value={formData.name} onChange={handleChange} required />
                     </div>
                     <div className="form-group">
                         <label>Email</label>
-                        <input type="email" name="email" onChange={handleChange} required />
+                        <input type="email" name="email" value={formData.email} onChange={handleChange} required />
                     </div>
                     <div className="form-group">
                         <label>Password</label>
-                        <input type="password" name="password" onChange={handleChange} required />
+                        <input type="password" name="password" value={formData.password} onChange={handleChange} required />
                     </div>
                     {role === 'student' && (
                         <>
                             <div className="form-group">
                                 <label>Register Number</label>
-                                <input type="text" name="registerNo" onChange={handleChange} required />
+                                <input type="text" name="registerNo" value={formData.registerNo} onChange={handleChange} required />
                             </div>
                             <div className="form-group">
                                 <label>Year</label>

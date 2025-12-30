@@ -12,6 +12,14 @@ dotenv.config();
 initCronJobs();
 
 const app = express();
+const http = require('http');
+const server = http.createServer(app);
+const socketService = require('./services/socketService');
+const io = socketService.init(server);
+
+// Make io accessible globally if needed, or use getIO
+app.set('socketio', io);
+
 const PORT = process.env.PORT || 5000;
 
 // Middleware
@@ -38,7 +46,6 @@ app.use('/api/students', studentRoutes);
 app.use('/api/admin', adminRoutes);
 
 // Database Connection
-// Database Connection
 mongoose.connect(process.env.MONGO_URI, {
     serverSelectionTimeoutMS: 5000,
     socketTimeoutMS: 45000,
@@ -46,7 +53,7 @@ mongoose.connect(process.env.MONGO_URI, {
     .then(() => {
         console.log('MongoDB Connected');
         // Start Server only after DB connection
-        app.listen(PORT, () => {
+        server.listen(PORT, () => {
             console.log(`Server running on port ${PORT}`);
         });
     })

@@ -3,6 +3,7 @@ import React, { useEffect, useState, useContext } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import './Navbar.css';
+import NotificationCenter from './NotificationCenter';
 
 const Navbar = () => {
     const { user, logout } = useContext(AuthContext);
@@ -45,6 +46,7 @@ const Navbar = () => {
                     <div className="top-nav">
                         {user ? (
                             <>
+                                <NotificationCenter />
                                 <span className="user-greeting">Hi, {user.name || user.email?.split('@')[0]}</span>
                                 <button onClick={handleLogout} className="logout-btn-top">Logout</button>
                             </>

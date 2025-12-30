@@ -66,6 +66,34 @@
     transform: translateY(-2px);
 }
 
+.password-input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-input-container input {
+    padding-right: 45px;
+}
+
+.password-toggle-btn {
+    position: absolute;
+    right: 12px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #666;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.3s;
+}
+
+.password-toggle-btn:hover {
+    color: #830000;
+}
+
 .auth-btn {
     width: 100%;
     padding: 16px;
@@ -151,6 +179,60 @@
 .auth-link a:hover {
     color: #600000;
     text-decoration: underline;
+}
+
+.google-auth-btn {
+    width: 100%;
+    margin: 15px 0;
+    padding: 14px;
+    background: #ffffff;
+    color: #3c4043;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.google-auth-btn:hover {
+    background: #f8f9fa;
+    border-color: #c0c0c0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.google-auth-icon {
+    width: 20px;
+    height: 20px;
+}
+
+.auth-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 20px 0;
+    color: #666;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.auth-divider:not(:empty)::before {
+    margin-right: 15px;
+}
+
+.auth-divider:not(:empty)::after {
+    margin-left: 15px;
 }
 
 /* Mobile Responsive Styles */

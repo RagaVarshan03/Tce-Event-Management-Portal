@@ -34,11 +34,8 @@ const Home = () => {
                 transition={{ duration: 0.8 }}
             >
                 <h1 style={{ fontSize: '2.5rem', marginBottom: '10px', fontWeight: '800' }}>Department of Computer Science and Business Systems</h1>
-                <p style={{ fontSize: '1.4rem', fontWeight: '500', opacity: '0.95' }}>Thiagarajar College of Engineering</p>
-                <div style={{ width: '60px', height: '4px', background: '#fff', margin: '20px auto', borderRadius: '2px' }}></div>
-                <p style={{ marginTop: '20px', fontSize: '1.1rem', maxWidth: '800px', margin: '20px auto', lineHeight: '1.6' }}>
-                    Welcome to the Event Management System. Discover and participate in various events organized by the department.
-                </p>
+                <p style={{ fontSize: '1.4rem', fontWeight: '500', opacity: '0.95' }}>Thiagarajar College of Engineering, Madurai - 625015</p>
+
             </motion.header>
 
 
