@@ -20,12 +20,8 @@ const io = socketService.init(server);
 // Make io accessible globally if needed, or use getIO
 app.set('socketio', io);
 
-const PORT = process.env.PORT || 5000;
-
-// Middleware
 app.use(cors({
     origin: process.env.CLIENT_URL || '*',
-    credentials: true
 }));
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
