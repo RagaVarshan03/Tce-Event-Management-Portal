@@ -5,20 +5,23 @@ const createTransporter = () => {
     return nodemailer.createTransport({
         service: 'gmail',
         host: 'smtp.gmail.com',
-        port: 465, // Use Port 465 for SSL
-        secure: true, // Use SSL
+        port: 587, // Try Port 587 (STARTTLS)
+        secure: false, // false for 587
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS ? process.env.EMAIL_PASS.replace(/\s+/g, '') : undefined
         },
-        // Remove 'tls' block as it's not needed for secure: true usually, or update it
-        // Keeping it specifically to allow self-signed certs if needed, but cleaner to rely on standard SSL
+        tls: {
+            rejectUnauthorized: false
+        },
+        // Force IPv4 to avoid IPv6 issues on some cloud providers
+        family: 4,
         debug: true,
         logger: true,
         // Add timeouts to prevent hanging
-        connectionTimeout: 10000, // 10 seconds
-        greetingTimeout: 10000,   // 10 seconds
-        socketTimeout: 10000      // 10 seconds
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 10000
     });
 };
 
