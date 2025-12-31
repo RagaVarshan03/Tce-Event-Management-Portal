@@ -3,25 +3,20 @@ const nodemailer = require('nodemailer');
 // Create reusable transporter with proper configuration
 const createTransporter = () => {
     return nodemailer.createTransport({
-        service: 'gmail',
-        host: 'smtp.gmail.com',
-        port: 587, // Try Port 587 (STARTTLS)
-        secure: false, // false for 587
+        host: 'smtp.gmail.com', // Explicit host, no 'service' preset
+        port: 465,             // SSL Port
+        secure: true,          // SSL
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS ? process.env.EMAIL_PASS.replace(/\s+/g, '') : undefined
         },
-        tls: {
-            rejectUnauthorized: false
-        },
-        // Force IPv4 to avoid IPv6 issues on some cloud providers
-        family: 4,
+        family: 4, // Force IPv4
         debug: true,
         logger: true,
-        // Add timeouts to prevent hanging
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 10000
+        // Increased timeouts
+        connectionTimeout: 15000,
+        greetingTimeout: 15000,
+        socketTimeout: 15000
     });
 };
 
