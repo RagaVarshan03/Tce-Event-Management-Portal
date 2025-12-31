@@ -9,7 +9,7 @@ const createTransporter = () => {
         secure: false, // Use TLS
         auth: {
             user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS
+            pass: process.env.EMAIL_PASS ? process.env.EMAIL_PASS.replace(/\s+/g, '') : undefined
         },
         tls: {
             rejectUnauthorized: false,

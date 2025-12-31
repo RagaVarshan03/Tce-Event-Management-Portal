@@ -447,3 +447,36 @@ exports.getMonthlyAnalytics = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+
+// Test Email Configuration
+exports.testEmailConfig = async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).json({ message: 'Email is required' });
+        }
+
+        const emailOptions = emailTemplates.registrationConfirmation(
+            'Test Admin',
+            email,
+            'Test Event System Check',
+            new Date(),
+            'Test Venue'
+        );
+
+        const result = await sendEmail(emailOptions);
+
+        if (result.success) {
+            res.json({ message: 'Test email sent successfully', messageId: result.messageId });
+        } else {
+            res.status(500).json({
+                message: 'Failed to send test email',
+                error: result.error,
+                envUser: process.env.EMAIL_USER ? 'Set' : 'Missing',
+                envPass: process.env.EMAIL_PASS ? 'Set' : 'Missing'
+            });
+        }
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
