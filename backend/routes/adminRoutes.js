@@ -18,7 +18,7 @@ const {
     getMonthlyAnalytics,
     addAllowedCoordinator,
     getAllowedCoordinators,
-    getAllowedCoordinators,
+
     removeAllowedCoordinator,
     testEmailConfig
 } = require('../controllers/adminController');
