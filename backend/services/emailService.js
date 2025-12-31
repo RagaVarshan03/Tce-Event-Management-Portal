@@ -14,7 +14,11 @@ const createTransporter = () => {
         // Remove 'tls' block as it's not needed for secure: true usually, or update it
         // Keeping it specifically to allow self-signed certs if needed, but cleaner to rely on standard SSL
         debug: true,
-        logger: true
+        logger: true,
+        // Add timeouts to prevent hanging
+        connectionTimeout: 10000, // 10 seconds
+        greetingTimeout: 10000,   // 10 seconds
+        socketTimeout: 10000      // 10 seconds
     });
 };
 
