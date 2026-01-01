@@ -3,20 +3,17 @@ const nodemailer = require('nodemailer');
 // Create reusable transporter with proper configuration
 const createTransporter = () => {
     return nodemailer.createTransport({
-        host: 'smtp.gmail.com', // Explicit host, no 'service' preset
-        port: 465,             // SSL Port
-        secure: true,          // SSL
+        service: 'gmail',
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS ? process.env.EMAIL_PASS.replace(/\s+/g, '') : undefined
         },
-        family: 4, // Force IPv4
+        // Keep these for debugging and reliability
         debug: true,
         logger: true,
-        // Increased timeouts
-        connectionTimeout: 15000,
-        greetingTimeout: 15000,
-        socketTimeout: 15000
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 10000
     });
 };
 
@@ -27,7 +24,7 @@ const emailTemplates = {
         to: email,
         subject: 'Welcome to TCE CSBS Event Management',
         html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    < div style = "font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;" >
                 <div style="background: #830000; color: white; padding: 20px; text-align: center;">
                     <h2>Welcome to TCE CSBS Event Management</h2>
                 </div>
@@ -45,16 +42,16 @@ const emailTemplates = {
                         <p>🌐 www.tce.edu</p>
                     </div>
                 </div>
-            </div>
-        `
+            </div >
+    `
     }),
 
     eventNotification: (studentName, studentEmail, eventName, eventDate, eventVenue, eventDescription) => ({
         from: '"TCE CSBS Event Management" <raga@student.tce.edu>',
         to: studentEmail,
-        subject: `Event Reminder: ${eventName}`,
+        subject: `Event Reminder: ${eventName} `,
         html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    < div style = "font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;" >
                 <div style="background: #830000; color: white; padding: 20px; text-align: center;">
                     <h2>Event Notification</h2>
                 </div>
@@ -75,16 +72,16 @@ const emailTemplates = {
                         <p>🌐 www.tce.edu</p>
                     </div>
                 </div>
-            </div>
-        `
+            </div >
+    `
     }),
 
     registrationConfirmation: (studentName, studentEmail, eventName, eventDate, eventVenue) => ({
         from: '"TCE Event Management Portal" <raga@student.tce.edu>',
         to: studentEmail,
-        subject: `Registration Confirmed: ${eventName}`,
+        subject: `Registration Confirmed: ${eventName} `,
         html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    < div style = "font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;" >
                 <div style="background: #830000; color: white; padding: 20px; text-align: center;">
                     <h2>Registration Confirmation</h2>
                 </div>
@@ -105,8 +102,8 @@ const emailTemplates = {
                         <p>🌐 www.tce.edu</p>
                     </div>
                 </div>
-            </div>
-        `
+            </div >
+    `
     }),
 
     coordinatorApproved: (name, email) => ({
@@ -114,7 +111,7 @@ const emailTemplates = {
         to: email,
         subject: 'Coordinator Account Approved',
         html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    < div style = "font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;" >
                 <div style="background: #28a745; color: white; padding: 20px; text-align: center;">
                     <h2>Account Approved!</h2>
                 </div>
@@ -138,8 +135,8 @@ const emailTemplates = {
                         <p>🌐 www.tce.edu</p>
                     </div>
                 </div>
-            </div>
-        `
+            </div >
+    `
     }),
 
     coordinatorRejected: (name, email, reason) => ({
@@ -147,7 +144,7 @@ const emailTemplates = {
         to: email,
         subject: 'Coordinator Account Status',
         html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    < div style = "font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;" >
                 <div style="background: #dc3545; color: white; padding: 20px; text-align: center;">
                     <h2>Account Application Update</h2>
                 </div>
@@ -169,16 +166,16 @@ const emailTemplates = {
                         <p>🌐 www.tce.edu</p>
                     </div>
                 </div>
-            </div>
-        `
+            </div >
+    `
     }),
 
     eventApproved: (coordinatorName, coordinatorEmail, eventName, eventDate) => ({
         from: '"TCE Event Management Portal" <raga@student.tce.edu>',
         to: coordinatorEmail,
-        subject: `Event Approved: ${eventName}`,
+        subject: `Event Approved: ${eventName} `,
         html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    < div style = "font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;" >
                 <div style="background: #28a745; color: white; padding: 20px; text-align: center;">
                     <h2>Event Approved!</h2>
                 </div>
@@ -198,16 +195,16 @@ const emailTemplates = {
                         <p>🌐 www.tce.edu</p>
                     </div>
                 </div>
-            </div>
-        `
+            </div >
+    `
     }),
 
     eventRejected: (coordinatorName, coordinatorEmail, eventName, reason) => ({
         from: '"TCE Event Management Portal" <raga@student.tce.edu>',
         to: coordinatorEmail,
-        subject: `Event Status: ${eventName}`,
+        subject: `Event Status: ${eventName} `,
         html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    < div style = "font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;" >
                 <div style="background: #dc3545; color: white; padding: 20px; text-align: center;">
                     <h2>Event Status Update</h2>
                 </div>
@@ -230,16 +227,16 @@ const emailTemplates = {
                         <p>🌐 www.tce.edu</p>
                     </div>
                 </div>
-            </div>
-        `
+            </div >
+    `
     }),
 
     eventUpdate: (studentName, studentEmail, eventName, changes) => ({
         from: '"TCE Event Management Portal" <raga@student.tce.edu>',
         to: studentEmail,
-        subject: `Update: ${eventName}`,
+        subject: `Update: ${eventName} `,
         html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    < div style = "font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;" >
                 <div style="background: #ffc107; color: black; padding: 20px; text-align: center;">
                     <h2>Event Update Notification</h2>
                 </div>
@@ -266,16 +263,16 @@ const emailTemplates = {
                         <p>🌐 www.tce.edu</p>
                     </div>
                 </div>
-            </div>
-        `
+            </div >
+    `
     }),
 
     certificateDistribution: (studentName, studentEmail, eventName) => ({
         from: '"TCE Event Management Portal" <raga@student.tce.edu>',
         to: studentEmail,
-        subject: `Certificate of Participation: ${eventName}`,
+        subject: `Certificate of Participation: ${eventName} `,
         html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    < div style = "font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;" >
                 <div style="background: #28a745; color: white; padding: 20px; text-align: center;">
                     <h2>Certificate of Participation</h2>
                 </div>
@@ -295,16 +292,16 @@ const emailTemplates = {
                         <p>🌐 www.tce.edu</p>
                     </div>
                 </div>
-            </div>
-        `
+            </div >
+    `
     }),
 
     waitlistJoined: (studentName, studentEmail, eventName) => ({
         from: '"TCE Event Management Portal" <raga@student.tce.edu>',
         to: studentEmail,
-        subject: `Waitlist Confirmed: ${eventName}`,
+        subject: `Waitlist Confirmed: ${eventName} `,
         html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    < div style = "font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;" >
                 <div style="background: #ffc107; color: black; padding: 20px; text-align: center;">
                     <h2>You are on the Waitlist</h2>
                 </div>
@@ -318,8 +315,8 @@ const emailTemplates = {
                         <p><strong>Thiagarajar College of Engineering</strong></p>
                     </div>
                 </div>
-            </div>
-        `
+            </div >
+    `
     }),
 
     waitlistPromoted: (studentName, studentEmail, eventName, date, venue) => ({
@@ -327,7 +324,7 @@ const emailTemplates = {
         to: studentEmail,
         subject: `Spot Confirmed! You are registered for ${eventName}`,
         html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    < div style = "font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;" >
                 <div style="background: #28a745; color: white; padding: 20px; text-align: center;">
                     <h2>Spot Confirmed!</h2>
                 </div>
@@ -343,8 +340,8 @@ const emailTemplates = {
                         <p><strong>Thiagarajar College of Engineering</strong></p>
                     </div>
                 </div>
-            </div>
-        `
+            </div >
+    `
     }),
 
     feedbackRequest: (studentName, studentEmail, eventName, eventId) => ({
@@ -352,7 +349,7 @@ const emailTemplates = {
         to: studentEmail,
         subject: `How was ${eventName}?`,
         html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    < div style = "font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;" >
                 <div style="background: #17a2b8; color: white; padding: 20px; text-align: center;">
                     <h2>We'd love your feedback!</h2>
                 </div>
@@ -372,8 +369,8 @@ const emailTemplates = {
                         <p><strong>Thiagarajar College of Engineering</strong></p>
                     </div>
                 </div>
-            </div>
-        `
+            </div >
+    `
     })
 };
 
@@ -383,7 +380,7 @@ const sendEmail = async (emailOptions, retries = 3) => {
 
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {
-            console.log(`Attempting to send email (attempt ${attempt}/${retries})...`);
+            console.log(`Attempting to send email(attempt ${attempt} / ${retries})...`);
             console.log('Email recipient:', emailOptions.to);
             console.log('Email subject:', emailOptions.subject);
 
@@ -395,7 +392,7 @@ const sendEmail = async (emailOptions, retries = 3) => {
 
             return { success: true, messageId: info.messageId };
         } catch (error) {
-            console.error(`Email sending failed (attempt ${attempt}/${retries}):`, error.message);
+            console.error(`Email sending failed(attempt ${attempt} / ${retries}): `, error.message);
 
             if (attempt === retries) {
                 console.error('All email sending attempts failed');
