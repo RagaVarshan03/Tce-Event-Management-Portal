@@ -369,38 +369,45 @@ const emailTemplates = {
                         <p><strong>Thiagarajar College of Engineering</strong></p>
                     </div>
                 </div>
-            </div >
-    `
     })
 };
 
-// Send email with retry logic
+// Send email with retry logic and Mock Mode fallback
 const sendEmail = async (emailOptions, retries = 3) => {
+    // Check for Mock Mode
+    if (process.env.MOCK_EMAIL === 'true') {
+        console.log('------- MOCK EMAIL MODE -------');
+        console.log('To:', emailOptions.to);
+        console.log('Subject:', emailOptions.subject);
+        console.log('Content Preview:', emailOptions.html.substring(0, 100) + '...');
+        console.log('-------------------------------');
+        return { success: true, messageId: 'mock-email-id-' + Date.now() };
+    }
+
     const transporter = createTransporter();
 
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {
-            console.log(`Attempting to send email(attempt ${attempt} / ${retries})...`);
+            console.log(`Attempting to send email(attempt ${ attempt }/ ${ retries })...`);
             console.log('Email recipient:', emailOptions.to);
-            console.log('Email subject:', emailOptions.subject);
 
             const info = await transporter.sendMail(emailOptions);
 
             console.log('Email sent successfully!');
             console.log('Message ID:', info.messageId);
-            console.log('Response:', info.response);
 
             return { success: true, messageId: info.messageId };
         } catch (error) {
-            console.error(`Email sending failed(attempt ${attempt} / ${retries}): `, error.message);
+            console.error(`Email sending failed(attempt ${ attempt } / ${ retries }): `, error.message);
 
             if (attempt === retries) {
-                console.error('All email sending attempts failed');
-                console.error('Error details:', {
-                    message: error.message,
-                    code: error.code,
-                    command: error.command
-                });
+                console.error('All email sending attempts failed.');
+                
+                // FALLBACK: If configured to allow fallback (optional), return success to prevent app crash
+                // For now, we return failure so the Admin knows it failed, 
+                // UNLESS we are in a strict "demo mode" where we want to hide errors.
+                // Given the user's urgency ("finish within tmrw"), let's suggest MOCK_EMAIL.
+                
                 return { success: false, error: error.message };
             }
 
