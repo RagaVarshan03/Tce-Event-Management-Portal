@@ -2,8 +2,11 @@ const nodemailer = require('nodemailer');
 
 // Create reusable transporter with proper configuration
 const createTransporter = () => {
+    // If we're using Brevo or other SMTP, we use host/port
     return nodemailer.createTransport({
-        service: 'gmail',
+        host: process.env.EMAIL_HOST || 'smtp-relay.brevo.com',
+        port: process.env.EMAIL_PORT || 587,
+        secure: process.env.EMAIL_PORT == 465, // true for 465, false for others
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS ? process.env.EMAIL_PASS.replace(/\s+/g, '') : undefined
@@ -11,9 +14,9 @@ const createTransporter = () => {
         // Keep these for debugging and reliability
         debug: true,
         logger: true,
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 10000
+        connectionTimeout: 15000,
+        greetingTimeout: 15000,
+        socketTimeout: 15000
     });
 };
 
