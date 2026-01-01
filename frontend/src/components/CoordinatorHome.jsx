@@ -103,7 +103,6 @@ const CoordinatorHome = () => {
                 }
             });
             alert('Event created! It will be visible to students after admin approval.');
-            alert('Event created! It will be visible to students after admin approval.');
             setNewEvent({ eventName: '', description: '', date: '', venue: '', clubName: '' });
             setTimeData({ hour: '12', minute: '00', period: 'AM' });
             setPosterFile(null);

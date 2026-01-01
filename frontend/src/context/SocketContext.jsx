@@ -7,36 +7,56 @@ const SocketContext = createContext();
 export const useSocket = () => useContext(SocketContext);
 
 export const SocketProvider = ({ children }) => {
+    const { user, token } = useContext(AuthContext); // Access auth status
     const [socket, setSocket] = useState(null);
     const [notifications, setNotifications] = useState([]);
 
     useEffect(() => {
-        // Fetch existing notifications
+        // If no user/token, clear state and stop
+        if (!user || !token) {
+            setNotifications([]);
+            if (socket) {
+                socket.disconnect();
+                setSocket(null);
+            }
+            return;
+        }
+
+        // Fetch existing notifications for the logged-in user
         const fetchNotifications = async () => {
             try {
                 const res = await API.get('/notifications');
                 setNotifications(res.data);
+                console.log('[Socket] Fetched stored notifications:', res.data.length);
             } catch (err) {
                 console.error('Error fetching notifications:', err);
             }
         };
         fetchNotifications();
 
-        // Determine Socket URL (Base URL without /api)
+        // Determine Socket URL
         const socketURL = import.meta.env.VITE_API_URL
             ? import.meta.env.VITE_API_URL.replace('/api', '')
             : 'http://localhost:4000';
 
-        const newSocket = io(socketURL); // Connect to dynamic URL
+        const newSocket = io(socketURL, {
+            auth: { token } // Pass token to socket if backend uses it for auth
+        });
+
         setSocket(newSocket);
 
         newSocket.on('newNotification', (notification) => {
-            setNotifications(prev => [notification, ...prev]);
-            console.log('[Socket] New Notification:', notification);
+            // Only add if intended for this user (Real-time filter)
+            if (notification.recipient === user._id || !notification.recipient) {
+                setNotifications(prev => [notification, ...prev]);
+                console.log('[Socket] New Notification matched:', notification);
+            }
         });
 
-        return () => newSocket.close();
-    }, []);
+        return () => {
+            newSocket.disconnect();
+        };
+    }, [user, token]); // Re-run when user logs in/out
 
     const clearNotifications = async () => {
         try {
