@@ -367,8 +367,9 @@ const emailTemplates = {
                     <div style="background: white; padding: 15px; border-left: 4px solid #830000;">
                         <h3 style="margin-top: 0;">Contact Information</h3>
                         <p><strong>Thiagarajar College of Engineering</strong></p>
-                    </div>
                 </div>
+            </div>
+        `
     })
 };
 
@@ -388,7 +389,7 @@ const sendEmail = async (emailOptions, retries = 3) => {
 
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {
-            console.log(`Attempting to send email(attempt ${ attempt }/ ${ retries })...`);
+            console.log(`Attempting to send email(attempt ${attempt}/ ${retries})...`);
             console.log('Email recipient:', emailOptions.to);
 
             const info = await transporter.sendMail(emailOptions);
@@ -398,16 +399,16 @@ const sendEmail = async (emailOptions, retries = 3) => {
 
             return { success: true, messageId: info.messageId };
         } catch (error) {
-            console.error(`Email sending failed(attempt ${ attempt } / ${ retries }): `, error.message);
+            console.error(`Email sending failed(attempt ${attempt} / ${retries}): `, error.message);
 
             if (attempt === retries) {
                 console.error('All email sending attempts failed.');
-                
+
                 // FALLBACK: If configured to allow fallback (optional), return success to prevent app crash
                 // For now, we return failure so the Admin knows it failed, 
                 // UNLESS we are in a strict "demo mode" where we want to hide errors.
                 // Given the user's urgency ("finish within tmrw"), let's suggest MOCK_EMAIL.
-                
+
                 return { success: false, error: error.message };
             }
 
