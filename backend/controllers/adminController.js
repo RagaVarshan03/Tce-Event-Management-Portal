@@ -467,13 +467,23 @@ exports.testEmailConfig = async (req, res) => {
         const result = await sendEmail(emailOptions);
 
         if (result.success) {
-            res.json({ message: 'Test email sent successfully', messageId: result.messageId });
+            res.json({
+                message: process.env.MOCK_EMAIL === 'true' ? 'Success: Simulated email (MOCK MODE active)' : 'Success: Test email sent successfully',
+                debug: {
+                    envUser: process.env.EMAIL_USER ? 'Set' : 'Missing',
+                    envPass: process.env.EMAIL_PASS ? 'Set' : 'Missing',
+                    isMock: process.env.MOCK_EMAIL === 'true'
+                }
+            });
         } else {
             res.status(500).json({
                 message: 'Failed to send test email',
                 error: result.error,
-                envUser: process.env.EMAIL_USER ? 'Set' : 'Missing',
-                envPass: process.env.EMAIL_PASS ? 'Set' : 'Missing'
+                debug: {
+                    envUser: process.env.EMAIL_USER ? 'Set' : 'Missing',
+                    envPass: process.env.EMAIL_PASS ? 'Set' : 'Missing',
+                    isMock: process.env.MOCK_EMAIL === 'true'
+                }
             });
         }
     } catch (error) {
