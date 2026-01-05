@@ -30,7 +30,7 @@ const sendViaBrevoAPI = (options) => {
             headers: {
                 'api-key': apiKey,
                 'Content-Type': 'application/json',
-                'Content-Length': data.length
+                'Content-Length': Buffer.byteLength(data)
             }
         };
 
