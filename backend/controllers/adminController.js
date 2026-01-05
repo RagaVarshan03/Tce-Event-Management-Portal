@@ -477,12 +477,12 @@ exports.testEmailConfig = async (req, res) => {
             });
         } else {
             res.status(500).json({
-                message: 'Failed to send test email',
-                error: result.error,
+                message: `Failed to send email: ${result.error || 'Unknown error'}`,
                 debug: {
                     envUser: process.env.EMAIL_USER ? 'Set' : 'Missing',
                     envPass: process.env.EMAIL_PASS ? 'Set' : 'Missing',
-                    isMock: process.env.MOCK_EMAIL === 'true'
+                    isMock: process.env.MOCK_EMAIL === 'true',
+                    fullError: result.error
                 }
             });
         }
