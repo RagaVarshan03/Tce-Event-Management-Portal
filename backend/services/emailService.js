@@ -23,7 +23,7 @@ const createTransporter = () => {
 // Email templates
 const emailTemplates = {
     welcome: (name, email) => ({
-        from: '"TCE CSBS Event Management" <raga@student.tce.edu>',
+        from: `"TCE CSBS Event Management" <${process.env.EMAIL_USER}>`,
         to: email,
         subject: 'Welcome to TCE CSBS Event Management',
         html: `
@@ -50,7 +50,7 @@ const emailTemplates = {
     }),
 
     eventNotification: (studentName, studentEmail, eventName, eventDate, eventVenue, eventDescription) => ({
-        from: '"TCE CSBS Event Management" <raga@student.tce.edu>',
+        from: `"TCE CSBS Event Management" <${process.env.EMAIL_USER}>`,
         to: studentEmail,
         subject: `Event Reminder: ${eventName} `,
         html: `
@@ -80,7 +80,7 @@ const emailTemplates = {
     }),
 
     registrationConfirmation: (studentName, studentEmail, eventName, eventDate, eventVenue) => ({
-        from: '"TCE Event Management Portal" <raga@student.tce.edu>',
+        from: `"TCE Event Management Portal" <${process.env.EMAIL_USER}>`,
         to: studentEmail,
         subject: `Registration Confirmed: ${eventName} `,
         html: `
@@ -110,7 +110,7 @@ const emailTemplates = {
     }),
 
     coordinatorApproved: (name, email) => ({
-        from: '"TCE Event Management Portal" <raga@student.tce.edu>',
+        from: `"TCE Event Management Portal" <${process.env.EMAIL_USER}>`,
         to: email,
         subject: 'Coordinator Account Approved',
         html: `
@@ -143,7 +143,7 @@ const emailTemplates = {
     }),
 
     coordinatorRejected: (name, email, reason) => ({
-        from: '"TCE Event Management Portal" <raga@student.tce.edu>',
+        from: `"TCE Event Management Portal" <${process.env.EMAIL_USER}>`,
         to: email,
         subject: 'Coordinator Account Status',
         html: `
@@ -174,7 +174,7 @@ const emailTemplates = {
     }),
 
     eventApproved: (coordinatorName, coordinatorEmail, eventName, eventDate) => ({
-        from: '"TCE Event Management Portal" <raga@student.tce.edu>',
+        from: `"TCE Event Management Portal" <${process.env.EMAIL_USER}>`,
         to: coordinatorEmail,
         subject: `Event Approved: ${eventName} `,
         html: `
@@ -203,7 +203,7 @@ const emailTemplates = {
     }),
 
     eventRejected: (coordinatorName, coordinatorEmail, eventName, reason) => ({
-        from: '"TCE Event Management Portal" <raga@student.tce.edu>',
+        from: `"TCE Event Management Portal" <${process.env.EMAIL_USER}>`,
         to: coordinatorEmail,
         subject: `Event Status: ${eventName} `,
         html: `
@@ -235,7 +235,7 @@ const emailTemplates = {
     }),
 
     eventUpdate: (studentName, studentEmail, eventName, changes) => ({
-        from: '"TCE Event Management Portal" <raga@student.tce.edu>',
+        from: `"TCE Event Management Portal" <${process.env.EMAIL_USER}>`,
         to: studentEmail,
         subject: `Update: ${eventName} `,
         html: `
