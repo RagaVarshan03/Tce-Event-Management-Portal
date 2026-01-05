@@ -19,8 +19,7 @@ const {
     addAllowedCoordinator,
     getAllowedCoordinators,
 
-    removeAllowedCoordinator,
-    testEmailConfig
+    removeAllowedCoordinator
 } = require('../controllers/adminController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 const upload = require('../middleware/uploadMiddleware');
@@ -54,8 +53,5 @@ router.get('/attendance/:eventId', protect, authorize('admin'), getEventAttendan
 
 // Analytics routes
 router.get('/analytics/monthly', protect, authorize('admin'), getMonthlyAnalytics);
-
-// Test Email Route
-router.post('/test-email', protect, authorize('admin'), testEmailConfig);
 
 module.exports = router;

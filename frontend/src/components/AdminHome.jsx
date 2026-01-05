@@ -164,12 +164,6 @@ const AdminHome = () => {
                 >
                     Analytics
                 </button>
-                <button
-                    className={`tab ${activeTab === 'system-check' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('system-check')}
-                >
-                    System Check
-                </button>
             </div>
 
             <div className="tab-content">
@@ -205,9 +199,6 @@ const AdminHome = () => {
                             <Analytics data={analytics} />
                         )}
 
-                        {activeTab === 'system-check' && (
-                            <SystemCheck />
-                        )}
                     </>
                 )}
 
@@ -232,80 +223,6 @@ const AdminHome = () => {
     );
 };
 
-const SystemCheck = () => {
-    const [email, setEmail] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [result, setResult] = useState(null);
-
-    const handleTestEmail = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setResult(null);
-        try {
-            const res = await API.post('/admin/test-email', { email });
-            setResult({ success: true, message: res.data.message });
-        } catch (err) {
-            setResult({
-                success: false,
-                message: err.response?.data?.message || 'Failed to send email',
-                details: err.response?.data
-            });
-        }
-        setLoading(false);
-    };
-
-    return (
-        <div className="approval-section">
-            <h2>System Health Check</h2>
-            <div className="system-check-container" style={{ maxWidth: '600px' }}>
-                <h3>Email Notification System</h3>
-                <p>Send a test email to verify that the server can send notifications.</p>
-
-                <form onSubmit={handleTestEmail} className="coordinator-form">
-                    <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Enter your email address"
-                        required
-                        className="coordinator-input"
-                    />
-                    <button
-                        type="submit"
-                        className="btn-add"
-                        disabled={loading}
-                        style={{ backgroundColor: loading ? '#ccc' : '#28a745' }}
-                    >
-                        {loading ? 'Sending...' : 'Send Test Email'}
-                    </button>
-                </form>
-
-                {result && (
-                    <div className={`result-box ${result.success ? 'success' : 'error'}`}
-                        style={{
-                            marginTop: '20px',
-                            padding: '15px',
-                            borderRadius: '8px',
-                            backgroundColor: result.success ? '#d4edda' : '#f8d7da',
-                            color: result.success ? '#155724' : '#721c24',
-                            border: `1px solid ${result.success ? '#c3e6cb' : '#f5c6cb'}`
-                        }}>
-                        <strong>{result.success ? 'Success:' : 'Error:'}</strong> {result.message}
-
-                        {!result.success && result.details && (
-                            <div style={{ marginTop: '10px', fontSize: '13px' }}>
-                                <p><strong>Debug Info:</strong></p>
-                                <pre style={{ overflowX: 'auto', whiteSpace: 'pre-wrap' }}>
-                                    {JSON.stringify(result.details, null, 2)}
-                                </pre>
-                            </div>
-                        )}
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-};
 
 // Sub-components
 const AddCoordinators = ({ coordinators, onAdd, onRemove }) => {
