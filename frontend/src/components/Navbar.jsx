@@ -71,13 +71,6 @@ const Navbar = () => {
 
                     <div className={`nav-menu ${isMenuOpen ? 'active' : ''}`}>
                         <Link to="/" className="nav-link" onClick={closeMenu}>Home</Link>
-                        {user && (
-                            <>
-                                {user.role === 'student' && <Link to="/student/dashboard" className="nav-link" onClick={closeMenu}>Dashboard</Link>}
-                                {user.role === 'coordinator' && <Link to="/coordinator/dashboard" className="nav-link" onClick={closeMenu}>Dashboard</Link>}
-                                {user.role === 'admin' && <Link to="/admin/dashboard" className="nav-link" onClick={closeMenu}>Dashboard</Link>}
-                            </>
-                        )}
                     </div>
                 </div>
             </nav>
